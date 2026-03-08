@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsx src/server.ts",
+    "start": "node -r ts-node/register src/server.ts",
     "dev": "tsx watch src/server.ts"
   },
   "keywords": [],
@@ -24,6 +24,7 @@
     "ollama": "^0.6.3",
     "openai": "^6.27.0",
     "puppeteer": "^24.38.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
