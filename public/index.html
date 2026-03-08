@@ -1,127 +1,251 @@
 <!DOCTYPE html>
-<html class="dark">
+<html lang="en">
+
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TitanLeap Lead Acquisition</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
     body {
-      font-family: 'Space Grotesk', sans-serif;
-      background-color: #030712;
-      color: #f3f4f6;
-    }
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      z-index: -1;
-      opacity: 0.4;
-      animation: float 10s ease-in-out infinite;
-    }
-    .orb-1 { width: 400px; height: 400px; top: -100px; left: -100px; background: linear-gradient(135deg, #4f46e5, #ec4899); }
-    .orb-2 { width: 500px; height: 500px; bottom: -200px; right: -100px; background: linear-gradient(135deg, #2563eb, #06b6d4); animation-delay: -5s; }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0) scale(1); }
-      50% { transform: translateY(-30px) scale(1.05); }
-    }
-    
-    .glass-panel {
-      background: rgba(17, 24, 39, 0.7);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      /* Lighter background */
     }
   </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              400: '#5eead4',
+              500: '#5A4EE5', /* Primary Purple based on screenshot */
+              600: '#4d3dd6',
+            }
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body class="min-h-screen relative overflow-x-hidden flex flex-col items-center py-12">
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  
-  <div class="w-full max-w-5xl px-6 relative z-10 flex flex-col gap-8">
-    
-    <header class="flex justify-between items-center py-4 border-b border-gray-800">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">T</div>
-        <h1 class="text-2xl font-bold tracking-tight text-white">Titan<span class="text-indigo-400">Leap</span></h1>
-      </div>
-      <div class="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm font-medium border border-indigo-500/30">
-        AI Lead Acquisition Agent
-      </div>
-    </header>
 
-    <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      
-      <!-- Control Panel -->
-      <section class="lg:col-span-1 glass-panel rounded-2xl p-6 flex flex-col gap-6 h-fit">
-        <div>
-          <h2 class="text-xl font-semibold text-white mb-2">Acquisition Engine</h2>
-          <p class="text-sm text-gray-400">Launch the AI scraper to find, analyze, and score startups from product directories.</p>
+<body class="min-h-screen flex text-gray-800 antialiased overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside
+    class="w-[300px] bg-white border-r border-[#eaecf0] flex flex-col h-screen shrink-0 relative z-10 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)]">
+    <!-- Header -->
+    <div class="h-[76px] border-b border-[#eaecf0] flex items-center px-6 gap-3 shrink-0">
+      <div class="w-10 h-10 rounded-xl bg-[#5A4EE5] flex items-center justify-center text-white shrink-0 shadow-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-[17px] font-bold text-gray-900 leading-tight">TitanLeap AI Agent</h1>
+        <p class="text-[10px] font-bold text-[#667085] uppercase tracking-[0.05em] mt-0.5">Lead Acquisition & Funnel
+          Analysis</p>
+      </div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="flex-1 overflow-y-auto w-full px-6 py-6 flex flex-col gap-6">
+
+      <!-- Source Platform -->
+      <div class="flex flex-col gap-2.5">
+        <div class="flex items-center gap-2 text-[#344054] font-semibold">
+          <svg class="w-4 h-4 text-[#667085]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <h2 class="text-[14px]">Source Platform</h2>
         </div>
-        
-        <button id="generateBtn" onclick="generateLeads()" class="relative group overflow-hidden rounded-xl font-bold text-white shadow-lg transition-all active:scale-95">
-          <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-90 group-hover:opacity-100 transition-opacity"></div>
-          <div class="relative px-6 py-4 flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            <span id="btnText">Initialize Scrape Protocol</span>
-          </div>
+        <input id="targetUrl" type="text" placeholder="Enter URL (Product Hunt, etc.)"
+          class="w-full px-4 py-3 bg-[#f9fafb] border border-[#eaecf0] rounded-[10px] text-sm text-[#101828] placeholder-[#98A2B3] focus:outline-none focus:ring-2 focus:ring-[#5A4EE5]/20 focus:border-[#5A4EE5] transition-all"
+          value="https://microlaunch.net">
+
+        <button id="generateBtn" onclick="generateLeads()"
+          class="w-full bg-[#5A4EE5] hover:bg-[#4E43CC] text-white font-semibold py-3 px-4 rounded-[10px] shadow-sm transition-all flex items-center justify-center gap-2 mt-1">
+          <span class="text-[18px] leading-none mb-0.5">+</span>
+          <span id="btnText" class="text-[14px]">Find Leads</span>
         </button>
+        <div id="statusBox" class="hidden text-[13px] text-center text-[#667085] font-medium animate-pulse mt-1">
+          <span id="statusText">Processing...</span>
+        </div>
+      </div>
 
-        <div id="statusBox" class="hidden p-4 rounded-xl bg-gray-800/50 border border-gray-700">
-          <div class="flex items-center gap-3">
-            <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-            <span id="statusText" class="text-sm text-gray-300 font-medium tracking-wide">Initializing worker...</span>
+      <!-- Stats -->
+      <div class="flex flex-col gap-2.5 mt-2">
+        <div class="flex items-center gap-2 text-[#344054] font-semibold mb-0.5">
+          <svg class="w-4 h-4 text-[#667085]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+            </path>
+          </svg>
+          <h2 class="text-[14px]">Stats</h2>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-[#f9fafb] border border-[#eaecf0] rounded-xl p-3.5 flex flex-col">
+            <span class="text-[10px] font-bold text-[#667085] uppercase tracking-wider mb-1.5">Total Leads</span>
+            <span id="totalLeadsCount" class="text-[22px] font-bold text-[#101828] leading-none">0</span>
+          </div>
+          <div class="bg-[#ecfdf5] border border-[#d1fae5] rounded-xl p-3.5 flex flex-col">
+            <span class="text-[10px] font-bold text-[#059669] uppercase tracking-wider mb-1.5">High Potential</span>
+            <span id="highPotentialCount" class="text-[22px] font-bold text-[#059669] leading-none">0</span>
           </div>
         </div>
+      </div>
 
-        <div class="mt-4 pt-4 border-t border-gray-800">
-          <p class="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wider">Providers Configured</p>
-          <div class="flex gap-2">
-            <span class="px-2 py-1 bg-green-500/10 text-green-400 rounded-md text-xs border border-green-500/20">Gemini Pro ✓</span>
-            <span class="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-md text-xs border border-blue-500/20">OpenAI Fallback ✓</span>
+    </div>
+
+    <!-- Pro Tip -->
+    <div class="p-5 mt-auto bg-white">
+      <div class="bg-[#f5f3ff] rounded-[14px] p-5 shadow-[inset_0_0_0_1px_#ede9fe]">
+        <div class="flex items-center gap-2 text-[#5A4EE5] font-bold mb-2.5 px-0.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z">
+            </path>
+          </svg>
+          <span class="text-[11px] tracking-widest uppercase">Pro Tip</span>
+        </div>
+        <p class="text-[13px] text-[#5A4EE5] leading-[1.6] opacity-90 font-medium px-0.5">
+          Target companies with "High" scores first. They have the most obvious funnel leaks where TitanLeap can provide
+          immediate ROI.
+        </p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col h-screen bg-white">
+
+    <!-- Top Nav / Filters -->
+    <div
+      class="h-[76px] border-b border-[#eaecf0] flex items-center justify-end px-8 gap-5 shrink-0 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.01)] relative z-0">
+
+      <!-- Filter Toggle -->
+      <div class="flex items-center bg-[#f2f4f7] p-[3px] rounded-lg">
+        <button
+          class="px-[18px] py-[6px] rounded-md bg-white text-[#5A4EE5] font-semibold text-[13px] shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all focus:outline-none ring-1 ring-[#eaecf0]/50">All</button>
+        <button
+          class="px-[18px] py-[6px] rounded-md text-[#667085] hover:text-[#344054] font-medium text-[13px] transition-all focus:outline-none">High</button>
+        <button
+          class="px-[18px] py-[6px] rounded-md text-[#667085] hover:text-[#344054] font-medium text-[13px] transition-all focus:outline-none">Medium</button>
+        <button
+          class="px-[18px] py-[6px] rounded-md text-[#667085] hover:text-[#344054] font-medium text-[13px] transition-all focus:outline-none">Low</button>
+      </div>
+
+      <!-- Export -->
+      <button
+        class="flex items-center gap-2 px-[18px] py-[8px] bg-white border border-[#eaecf0] hover:bg-[#f9fafb] rounded-[8px] text-[#344054] font-semibold text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all">
+        <svg class="w-4 h-4 text-[#667085]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+        </svg>
+        Export
+      </button>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 flex flex-col relative overflow-hidden bg-[#f8fafc]/50">
+
+      <!-- Empty State -->
+      <div id="emptyState"
+        class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-white transition-opacity duration-300">
+        <div
+          class="w-[84px] h-[84px] rounded-[24px] border border-[#eaecf0] flex items-center justify-center text-[#d0d5dd] mb-6 shadow-[0_4px_12px_-4px_rgba(0,0,0,0.05)] bg-[#fcfcfd]">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <h2 class="text-[18px] font-bold text-[#101828] mb-2.5">No leads yet</h2>
+        <p class="text-[#667085] text-[14px] leading-relaxed max-w-[360px]">
+          Enter a URL from Product Hunt, Indie Hackers, or a startup directory to start acquiring leads for TitanLeap.
+        </p>
+      </div>
+
+      <!-- Leads State (Hidden by default) -->
+      <div id="leadsState"
+        class="absolute inset-0 overflow-y-auto p-10 opacity-0 pointer-events-none transition-opacity duration-300 bg-white">
+        <div class="max-w-4xl mx-auto flex flex-col gap-6">
+          <div>
+            <h3 class="text-[18px] font-bold text-[#101828]">Acquired CSVs</h3>
+            <p class="text-[14px] text-[#667085] mt-1">Ready for CRM import and funnel analysis.</p>
+          </div>
+
+          <div id="leadsList" class="flex flex-col gap-3">
+            <!-- Populated by JS -->
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- Results Panel -->
-      <section class="lg:col-span-2 glass-panel rounded-2xl p-6 flex flex-col gap-4">
-        <h2 class="text-xl font-semibold text-white">Acquired Lead Datasets</h2>
-        <p class="text-sm text-gray-400 mb-4">Download your AI-enriched .csv files here. Ready for CRM import.</p>
-        
-        <div id="leadsList" class="flex flex-col gap-3">
-          <!-- Populated by JS -->
-          <div class="text-center py-8 text-gray-500">Loading datasets...</div>
-        </div>
-      </section>
-      
-    </main>
-
-  </div>
+    </div>
+  </main>
 
   <script>
-    async function loadFiles() {
-      const res = await fetch('/api/leads');
-      const files = await res.json();
-      const list = document.getElementById('leadsList');
-      if (files.length === 0) {
-        list.innerHTML = '<div class="text-center py-8 text-gray-500 border border-dashed border-gray-700 rounded-xl">No leads generated yet. Click the button to start!</div>';
-        return;
+    function updateVisibility(hasFiles) {
+      const emptyState = document.getElementById('emptyState');
+      const leadsState = document.getElementById('leadsState');
+
+      if (hasFiles) {
+        emptyState.style.opacity = '0';
+        emptyState.style.pointerEvents = 'none';
+        leadsState.style.opacity = '1';
+        leadsState.style.pointerEvents = 'auto';
+      } else {
+        emptyState.style.opacity = '1';
+        emptyState.style.pointerEvents = 'auto';
+        leadsState.style.opacity = '0';
+        leadsState.style.pointerEvents = 'none';
       }
-      list.innerHTML = files.sort().reverse().map(f => `
-        <div class="flex items-center justify-between p-4 bg-gray-800/40 border border-gray-700 rounded-xl hover:bg-gray-800/60 transition-colors">
-          <div class="flex items-center gap-3">
-            <div class="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+    }
+
+    async function loadFiles() {
+      try {
+        const res = await fetch('/api/leads');
+        if (!res.ok) throw new Error('Failed to fetch from /api/leads');
+        const files = await res.json();
+
+        const list = document.getElementById('leadsList');
+        const totalLeadsCounter = document.getElementById('totalLeadsCount');
+
+        updateVisibility(files.length > 0);
+
+        if (files.length === 0) {
+          list.innerHTML = '';
+          totalLeadsCounter.innerText = '0';
+          return;
+        }
+
+        totalLeadsCounter.innerText = files.length.toString(); // Just count file entries for now
+
+        list.innerHTML = files.sort((a, b) => b.name.localeCompare(a.name)).map(f => `
+            <div class="flex border border-[#eaecf0] items-center justify-between p-4 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] rounded-[12px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:border-[#d0d5dd] transition-all group">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 flex items-center justify-center bg-[#f9fafb] rounded-[10px] text-[#98A2B3] border border-[#eaecf0] group-hover:bg-[#f5f3ff] group-hover:text-[#5A4EE5] group-hover:border-[#ede9fe] transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                  <p class="text-[#101828] font-semibold text-[14px]">${f.name}</p>
+                  <p class="text-[12px] text-[#667085] mt-0.5">${new Date(f.mtime).toLocaleString()}</p>
+                </div>
+              </div>
+              <a href="/api/download/${f.name}" class="px-5 py-2.5 bg-white border border-[#eaecf0] hover:border-[#5A4EE5] text-[#344054] hover:text-[#5A4EE5] rounded-[8px] text-[13px] font-semibold transition-all shadow-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Download List
+              </a>
             </div>
-            <div>
-              <p class="text-white font-medium">${f.name}</p>
-              <p class="text-xs text-gray-400">${new Date(f.mtime).toLocaleString()}</p>
-            </div>
-          </div>
-          <a href="/api/download/${f.name}" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors">Download CSV</a>
-        </div>
-      `).join('');
+          `).join('');
+      } catch (err) {
+        console.error("Error loading files:", err);
+      }
     }
 
     async function generateLeads() {
@@ -129,34 +253,56 @@
       const btnText = document.getElementById('btnText');
       const statusBox = document.getElementById('statusBox');
       const statusText = document.getElementById('statusText');
-      
+
       btn.disabled = true;
-      btn.classList.add('opacity-50', 'cursor-not-allowed');
-      btnText.innerText = 'Scraping in Progress...';
+      btn.classList.add('opacity-70', 'cursor-wait');
+      btnText.innerText = 'Scraping...';
       statusBox.classList.remove('hidden');
-      statusText.innerText = 'Crawling Microlaunch...';
+      statusText.innerText = 'Extracting data...';
 
       try {
         const res = await fetch('/api/generate', { method: 'POST' });
         const data = await res.json();
+
         if (data.success) {
-          statusText.innerText = 'Success! File saved.';
-          setTimeout(() => { statusBox.classList.add('hidden'); }, 3000);
+          statusText.innerText = 'Success! Updating...';
+          statusText.classList.remove('text-[#667085]');
+          statusText.classList.add('text-[#059669]');
+          setTimeout(() => {
+            statusBox.classList.add('hidden');
+            statusText.classList.remove('text-[#059669]');
+            statusText.classList.add('text-[#667085]');
+          }, 3000);
           await loadFiles();
         } else {
           statusText.innerText = 'Error: ' + data.error;
+          statusText.classList.remove('text-[#667085]');
+          statusText.classList.add('text-[#ef4444]');
+          setTimeout(() => {
+            statusBox.classList.add('hidden');
+            statusText.classList.remove('text-[#ef4444]');
+            statusText.classList.add('text-[#667085]');
+          }, 4000);
         }
       } catch (err) {
         statusText.innerText = 'Network error occurred.';
+        statusText.classList.remove('text-[#667085]');
+        statusText.classList.add('text-[#ef4444]');
+        setTimeout(() => {
+          statusBox.classList.add('hidden');
+          statusText.classList.remove('text-[#ef4444]');
+          statusText.classList.add('text-[#667085]');
+        }, 4000);
       } finally {
         btn.disabled = false;
-        btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        btnText.innerText = 'Initialize Scrape Protocol';
+        btn.classList.remove('opacity-70', 'cursor-wait');
+        btnText.innerText = 'Find Leads';
       }
     }
 
     // Load initially
-    loadFiles();
+    document.addEventListener('DOMContentLoaded', loadFiles);
   </script>
 </body>
+
 </html>
