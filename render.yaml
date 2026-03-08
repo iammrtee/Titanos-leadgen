@@ -2,14 +2,12 @@ services:
   - type: web
     name: titan-lead-scraper
     env: node
-    buildCommand: npm install && npx puppeteer browsers install chrome
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: 'true'
-      - key: PUPPETEER_EXECUTABLE_PATH
-        value: '/opt/render/project/src/.cache/puppeteer/chrome/linux-114.0.5735.133/chrome-linux64/chrome'
+      - key: PUPPETEER_CACHE_DIR
+        value: /opt/render/project/src/.cache
