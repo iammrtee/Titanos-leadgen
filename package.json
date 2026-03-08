@@ -24,13 +24,13 @@
     "express": "^5.2.1",
     "ollama": "^0.6.3",
     "openai": "^6.27.0",
-    "puppeteer": "^24.38.0"
+    "puppeteer": "^24.38.0",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.3.5",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "tsx": "^4.21.0"
   }
 }
