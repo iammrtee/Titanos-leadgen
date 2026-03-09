@@ -53,10 +53,8 @@ app.get('/api/download/:filename', (req, res) => {
     res.download(file);
 });
 
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`TitanLeap Acquisition Dashboard running on http://localhost:${PORT}`);
-    });
-}
+app.listen(PORT, () => {
+    console.log(`TitanLeap Acquisition Dashboard running on http://localhost:${PORT}`);
+});
 
 export default app;
