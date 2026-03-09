@@ -34,7 +34,7 @@ Industry: ${lead.industry || 'Unknown'}
         try {
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
             const model = genAI.getGenerativeModel({
-                model: 'gemini-2.5-pro',
+                model: 'gemini-2.0-flash',
                 generationConfig: {
                     responseMimeType: 'application/json',
                     responseSchema: {
@@ -42,7 +42,7 @@ Industry: ${lead.industry || 'Unknown'}
                         properties: {
                             LeadScore: {
                                 type: SchemaType.STRING,
-                                enum: ['High Potential', 'Medium Potential', 'Low Potential'],
+                                description: 'Qualitative score of the lead: High Potential, Medium Potential, or Low Potential'
                             },
                             FunnelIssues: {
                                 type: SchemaType.ARRAY,
