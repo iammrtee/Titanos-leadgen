@@ -232,27 +232,39 @@
       const url = document.getElementById('targetUrl').value;
       const btn = document.getElementById('btnText');
       const statusBox = document.getElementById('statusBox');
+      const statusText = document.getElementById('statusText');
+
+      if (!url) return alert('Please enter a URL');
 
       btn.innerText = 'Searching...';
+      statusText.innerText = 'Hunting for leads...';
       statusBox.classList.remove('hidden');
 
       try {
-        await fetch('/api/generate', {
+        const res = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url })
         });
-        await loadLeads();
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to generate leads');
+
+        statusText.innerText = `Found ${data.count} new leads!`;
+        setTimeout(() => loadLeads(), 1000);
       } catch (err) {
+        alert(`Error: ${err.message}`);
         console.error('Discovery failed:', err);
       } finally {
-        btn.innerText = 'Fetch Raw Leads';
-        statusBox.classList.add('hidden');
+        setTimeout(() => {
+          btn.innerText = 'Fetch Raw Leads';
+          statusBox.classList.add('hidden');
+        }, 2000);
       }
     }
 
     async function analyzeLead(id) {
-      const btn = event.target;
+      const btn = event.currentTarget || event.target;
       const originalText = btn.innerText;
       btn.disabled = true;
       btn.innerText = 'Analyzing...';
@@ -261,11 +273,12 @@
       try {
         const res = await fetch(`/api/analyze/${id}`, { method: 'POST' });
         const data = await res.json();
-        if (data.success) {
-          await loadLeads();
-          viewAnalysis(id);
-        }
+        if (!res.ok) throw new Error(data.error || 'Analysis failed');
+
+        await loadLeads();
+        viewAnalysis(id);
       } catch (err) {
+        alert(`Analysis Error: ${err.message}`);
         console.error('Analysis failed:', err);
       } finally {
         btn.disabled = false;

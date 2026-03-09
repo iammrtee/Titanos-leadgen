@@ -36,15 +36,13 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
 
     console.log('[Universal Scraper] Discovering potential product links...');
 
-    const potentialLinks = await page.evaluate(() => {
+    const baseDomain = new URL(url).hostname;
+    const potentialLinks = await page.evaluate((baseDomain) => {
         const results: { title: string, url: string, confidence: number, followerCount?: string, niche?: string }[] = [];
         const seen = new Set();
 
-        // Strategy 1: Targeted path patterns
         const pathPatterns = ['/p/', '/product/', '/company/', '/startup/', '/app/', '/tools/'];
-
-        // Strategy 2: Link keyword check
-        const keywordPatterns = ['visit', 'website', 'try', 'get', 'demo', 'launch'];
+        const keywordPatterns = ['visit', 'website', 'try', 'get', 'demo', 'launch', 'view'];
 
         const anchors = Array.from(document.querySelectorAll('a'));
 
@@ -52,35 +50,43 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
             const href = (a as HTMLAnchorElement).href;
             if (!href || !href.startsWith('http') || seen.has(href)) continue;
 
-            let confidence = 0;
             const text = a.textContent?.trim() || '';
             const lowerText = text.toLowerCase();
             const lowerHref = href.toLowerCase();
+            const urlObj = new URL(href);
+            const isDirectoryLink = urlObj.hostname === baseDomain;
 
-            // Ignore navigation/legal/social (platform help etc)
+            // Strict Noise Filter
             if (lowerHref.includes('login') || lowerHref.includes('signin') ||
                 lowerHref.includes('privacy') || lowerHref.includes('terms') ||
-                lowerHref.includes('cookie') || lowerHref.includes('help')) continue;
+                lowerHref.includes('cookie') || lowerHref.includes('help') ||
+                lowerHref.includes('support') || lowerHref.includes('pricing')) continue;
 
-            // Pattern Match for startup cards or profile links
+            let confidence = 0;
             if (pathPatterns.some(p => lowerHref.includes(p))) confidence += 50;
             if (keywordPatterns.some(k => lowerText.includes(k))) confidence += 30;
 
-            // Step 3: Extract metrics if available in parent
+            // Generic external candidate (potential startup website)
+            if (!isDirectoryLink && !lowerHref.includes('twitter.com') && !lowerHref.includes('facebook.com') &&
+                !lowerHref.includes('linkedin.com') && !lowerHref.includes('youtube.com') &&
+                !lowerHref.includes('instagram.com') && !lowerHref.includes('github.com')) {
+                confidence += 20;
+            }
+
+            if (isDirectoryLink && confidence > 0) confidence += 20;
+
             const parentCard = a.closest('div, li, section, article');
-            const h2 = parentCard?.querySelector('h1, h2, h3, h4, .title, .name');
+            const h2 = parentCard?.querySelector('h1, h2, h3, h4, .title, .name, .font-bold');
             const title = h2?.textContent?.trim() || text;
 
-            // Look for follower counts or niche tags
             const metadata = parentCard?.textContent || '';
-            const followerMatch = metadata.match(/(\d+[,.]?\d*[kKmM]?)\s*(followers|votes|users)/i);
+            const followerMatch = metadata.match(/(\d+[,.]?\d*[kKmM]?)\s*(followers|votes|users|likes)/i);
             const followerCount = followerMatch ? followerMatch[1] : undefined;
 
-            // Look for industry/niche tags
-            const nicheTags = Array.from(parentCard?.querySelectorAll('.tag, .category, .badge') || [])
-                .map(el => el.textContent?.trim()).join(', ');
+            const nicheTags = Array.from(parentCard?.querySelectorAll('.tag, .category, .badge, .px-2') || [])
+                .map(el => el.textContent?.trim()).filter(t => t && t.length < 20).join(', ');
 
-            if (title.length > 2 && (confidence > 0)) { // Removed `isDirectoryLink` as it's not defined in this scope
+            if (title.length > 2 && confidence >= 20) {
                 seen.add(href);
                 results.push({
                     title,
@@ -93,7 +99,7 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
         }
 
         return results.sort((a, b) => b.confidence - a.confidence);
-    });
+    }, baseDomain);
 
     console.log(`[Universal Scraper] Found ${potentialLinks.length} candidates.`);
 
