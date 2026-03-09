@@ -2,6 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { runScraper } from './index';
+import { analyzeLead } from './analyzer/index';
+import { readLeads, updateLead } from './utils/db';
+import { exportToCsv } from './utils/csv';
 import fs from 'fs';
 import path from 'path';
 
@@ -9,52 +12,80 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(express.json());
 app.use(express.static('public'));
 
-// Endpoint to trigger scraping
+// Endpoint to trigger scraping (Discovery)
 app.post('/api/generate', async (req, res) => {
     try {
-        const filename = await runScraper();
-        if (filename) {
-            res.json({ success: true, filename });
-        } else {
-            res.status(500).json({ success: false, error: 'Scraping produced no results.' });
-        }
+        const { limit = 5 } = req.body;
+        const scraperResults = await runScraper(limit);
+        res.json({ success: true, count: scraperResults });
     } catch (error: any) {
         console.error('Scraping Error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Endpoint to list generated CSVs
-app.get('/api/leads', (req, res) => {
-    const directoryPath = process.cwd();
-    fs.readdir(directoryPath, (err, files) => {
-        if (err) {
-            return res.status(500).json({ error: 'Unable to scan directory' });
-        }
-        const csvFiles = files
-            .filter(f => f.startsWith('leads_') && f.endsWith('.csv'))
-            .map(f => {
-                const stat = fs.statSync(path.join(directoryPath, f));
-                return { name: f, mtime: stat.mtime };
-            });
-        res.json(csvFiles);
-    });
+// Endpoint to list individual leads (Step 1-3 results)
+app.get('/api/leads', async (req, res) => {
+    try {
+        const leads = await readLeads();
+        res.json(leads);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to read leads' });
+    }
 });
 
-// Endpoint to download CSV
-app.get('/api/download/:filename', (req, res) => {
-    const filename = req.params.filename;
-    if (!filename.startsWith('leads_') || !filename.endsWith('.csv')) {
-        return res.status(403).send('Forbidden');
+// Endpoint to analyze a specific lead (Steps 4-8)
+app.post('/api/analyze/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const leads = await readLeads();
+        const lead = leads.find(l => l.id === id);
+
+        if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+        const analysis = await analyzeLead(lead);
+        await updateLead(id, {
+            ...analysis,
+            status: 'analyzed',
+            analysisDate: new Date().toISOString()
+        });
+
+        res.json({ success: true, analysis });
+    } catch (error: any) {
+        console.error('Analysis Error:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
-    const file = path.join(process.cwd(), filename);
-    res.download(file);
+});
+
+// Endpoint to export all leads as CSV
+app.get('/api/export', async (req, res) => {
+    try {
+        const leads = await readLeads();
+        // Step 10: Sort by High Potential
+        const sortedLeads = leads.sort((a, b) => {
+            if (a.LeadScore === 'High Potential' && b.LeadScore !== 'High Potential') return -1;
+            if (a.LeadScore !== 'High Potential' && b.LeadScore === 'High Potential') return 1;
+            return 0;
+        });
+
+        const filename = 'titanleap_leads_export.csv';
+        const filePath = path.join(process.cwd(), filename);
+        await exportToCsv(sortedLeads, filePath);
+
+        res.download(filePath, (err) => {
+            if (err) console.error('Export Download Error:', err);
+            // Optional: delete temp file after download
+            // fs.unlinkSync(filePath);
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.listen(PORT, () => {
     console.log(`TitanLeap Acquisition Dashboard running on http://localhost:${PORT}`);
 });
-
 export default app;

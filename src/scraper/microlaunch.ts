@@ -1,14 +1,32 @@
 import puppeteer from 'puppeteer';
 
 export interface Lead {
+    id: string;
     companyName: string;
     website: string;
-    founderName?: string;
-    founderLinkedIn?: string;
-    founderTwitter?: string;
-    founderEmail?: string;
     description?: string;
     industry?: string;
+    // Step 3 Extended Fields
+    username?: string;
+    bio?: string;
+    followerCount?: string;
+    niche?: string;
+    contactEmail?: string;
+    // Status tracking
+    status: 'scraped' | 'analyzed';
+    analysisDate?: string;
+
+    // Analysis Fields (Step 9)
+    Industry?: string;
+    CompanyDescription?: string;
+    CompanySize?: string;
+    MainProduct?: string;
+    MarketingPresence?: string;
+    LeadScore?: string;
+    ScoreJustification?: string;
+    FunnelIssues?: string[];
+    GrowthInsight?: string;
+    OutreachMessage?: string;
 }
 
 export async function scrapeMicrolaunch(limit = 5): Promise<Lead[]> {
@@ -45,10 +63,12 @@ export async function scrapeMicrolaunch(limit = 5): Promise<Lead[]> {
             uniqueDomains.add(urlObj.hostname);
 
             leads.push({
+                id: Math.random().toString(36).substr(2, 9),
                 companyName: link.title || urlObj.hostname,
                 website: link.url,
                 industry: 'SaaS / Creator Economy',
-                description: 'Scraped from Microlaunch'
+                description: 'Scraped from Microlaunch',
+                status: 'scraped'
             });
 
             if (leads.length >= limit) break;
