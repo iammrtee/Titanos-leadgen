@@ -48,9 +48,16 @@ export async function scrapeMicrolaunch(limit = 5): Promise<Lead[]> {
     // Customizing for Microlaunch layout:
     // usually there are links to product pages /products/[slug] or directly outward.
     const productLinks = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('a[href^="http"]'))
-            .map(a => ({ title: a.textContent?.trim(), url: (a as HTMLAnchorElement).href }))
-            .filter(l => l.title && l.title.length > 2 && !l.url.includes('microlaunch'));
+        // Targeted selectors for Microlaunch
+        const items = Array.from(document.querySelectorAll('a[href*="/p/"], a[href*="/products/"]'));
+        return items.map(a => {
+            const titleEl = a.querySelector('h2, h3, .font-bold, .text-lg');
+            return {
+                title: titleEl?.textContent?.trim() || a.textContent?.trim(),
+                url: (a as HTMLAnchorElement).href
+            };
+        })
+            .filter(l => l.title && l.title.length > 2 && !l.url.includes('microlaunch.net/p/') && !l.url.includes('microlaunch.net/auth'));
     });
 
     // Unique domains
@@ -58,6 +65,8 @@ export async function scrapeMicrolaunch(limit = 5): Promise<Lead[]> {
 
     for (const link of productLinks) {
         try {
+            // Attempt to resolve the direct website if the link is a microlaunch product page
+            // For now, we'll store the microlaunch link as the website if direct is not found
             const urlObj = new URL(link.url);
             if (uniqueDomains.has(urlObj.hostname)) continue;
             uniqueDomains.add(urlObj.hostname);
@@ -66,7 +75,7 @@ export async function scrapeMicrolaunch(limit = 5): Promise<Lead[]> {
                 id: Math.random().toString(36).substr(2, 9),
                 companyName: link.title || urlObj.hostname,
                 website: link.url,
-                industry: 'SaaS / Creator Economy',
+                industry: 'SaaS / Startup',
                 description: 'Scraped from Microlaunch',
                 status: 'scraped'
             });
