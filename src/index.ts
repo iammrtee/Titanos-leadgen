@@ -43,6 +43,6 @@ export async function runScraper(): Promise<string | null> {
 }
 
 // Automatically run if CLI
-if (require.main === module) {
+if (typeof require !== 'undefined' && require.main === module) {
     runScraper().catch(console.error);
 }

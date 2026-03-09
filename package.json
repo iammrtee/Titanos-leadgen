@@ -16,6 +16,9 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@puppeteer/browsers": "^2.13.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.3.5",
     "axios": "^1.13.6",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
@@ -29,9 +32,5 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
-  "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.3.5"
-  }
+  "devDependencies": {}
 }

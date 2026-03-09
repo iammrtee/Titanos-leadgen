@@ -12,7 +12,10 @@ export interface Lead {
 }
 
 export async function scrapeMicrolaunch(limit = 5): Promise<Lead[]> {
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const page = await browser.newPage();
 
     await page.goto('https://microlaunch.net/', { waitUntil: 'networkidle2' });
