@@ -18,8 +18,10 @@ app.use(express.static('public'));
 // Endpoint to trigger scraping (Discovery)
 app.post('/api/generate', async (req, res) => {
     try {
-        const { limit = 5 } = req.body;
-        const scraperResults = await runScraper(limit);
+        const { url, limit = 5 } = req.body;
+        if (!url) return res.status(400).json({ error: 'URL is required' });
+
+        const scraperResults = await runScraper(url, limit);
         res.json({ success: true, count: scraperResults });
     } catch (error: any) {
         console.error('Scraping Error:', error);
