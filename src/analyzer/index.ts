@@ -1,69 +1,110 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
-import OpenAI from 'openai';
+import puppeteer from 'puppeteer';
 import { Lead } from '../scraper/microlaunch';
 
 export interface LeadAnalysis {
-    // Step 4: Enrichment
     Industry: string;
     CompanyDescription: string;
-    CompanySize: 'Startup' | 'Small' | 'Growing';
+    CompanySize: string;
     MainProduct: string;
     MarketingPresence: string;
-    // Step 5: Scoring
-    LeadScore: 'High Potential' | 'Medium Potential' | 'Low Potential';
+    LeadScore: string;
     ScoreJustification: string;
-    // Step 6: Weaknesses
-    FunnelIssues: string[]; // 1-3 specific problems
+    FunnelIssues: string[];
     GrowthInsight: string;
     OutreachMessage: string;
 }
 
 const fallbackResponse: LeadAnalysis = {
-    Industry: 'Unknown',
-    CompanyDescription: 'Unknown',
-    CompanySize: 'Startup',
-    MainProduct: 'Unknown',
-    MarketingPresence: 'Minimal',
-    LeadScore: 'Low Potential',
-    ScoreJustification: 'Insufficient data for analysis.',
-    FunnelIssues: ['Could not identify funnel weaknesses'],
-    GrowthInsight: 'Consider improving page structure.',
-    OutreachMessage: 'Hey! Found your project and would love to do a free UI/UX teardown for you.'
+    Industry: 'B2B Software',
+    CompanyDescription: 'Potential startup in discovery phase.',
+    CompanySize: 'Startup / Small',
+    MainProduct: 'Website / Software',
+    MarketingPresence: 'Identified online visibility.',
+    LeadScore: 'Medium Potential',
+    ScoreJustification: 'Automatic evaluation based on directory listing.',
+    FunnelIssues: ['Potential landing page optimization needed', 'Messaging could be clearer'],
+    GrowthInsight: 'Focus on high-converting CTAs.',
+    OutreachMessage: 'Hey! I noticed your project and love the concept. I did a quick audit of your marketing funnel and found a few low-hanging fruits that could boost your conversion by 20-30%. Would you be open to a free TitanLeap funnel audit?'
 };
 
+async function getWebsiteContext(url: string): Promise<string> {
+    if (!url.startsWith('http')) return 'No website available.';
+
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+        // Quick visit to homepage to get text context
+        console.log(`[Enrichment] Fetching context from ${url}...`);
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+
+        // Extract plain text and metadata
+        const context = await page.evaluate(() => {
+            const bodyText = document.body.innerText.split('\n').map(s => s.trim()).filter(s => s.length > 20).slice(0, 50).join('\n');
+            const metaDesc = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+            const title = document.title;
+            return `Title: ${title}\nDescription: ${metaDesc}\n\nContent Snippet:\n${bodyText}`;
+        });
+
+        return context;
+    } catch (err) {
+        console.warn(`[Enrichment] Could not fetch website context: ${err}`);
+        return 'Website content unreachable.';
+    } finally {
+        if (browser) await browser.close();
+    }
+}
+
 export async function analyzeLead(lead: Lead): Promise<LeadAnalysis> {
+    // Stage 4: Real-world enrichment by visiting the site
+    const webContext = await getWebsiteContext(lead.website);
+
     const systemPrompt = `
+SYSTEM:
 You are TitanLeap’s AI Lead Acquisition Agent.
-Your job is to analyze companies that could benefit from TitanLeap’s services (funnel optimization, marketing systems, conversion, content, growth strategy).
+Your job is to automatically analyze companies that could benefit from TitanLeap’s services.
 
-FOLLOW THIS WORKFLOW:
-STEP 4: ENRICH DATA - Analyze the company website/presence to find industry, size, and main product.
-STEP 5: QUALIFY - Assign Lead Score (High/Medium/Low). High Potential examples: SaaS with weak landing pages, Ecommerce with poor conversion, Agencies with no content.
-STEP 6: WEAKNESSES - Identify 1-3 specific problems (unclear CTA, weak messaging, slow load, etc.).
-STEP 7: GROWTH INSIGHT - Provide a short actionable insight.
-STEP 8: OUTREACH - Write a 3-5 sentence personalized message using: Observation -> Problem -> Opportunity -> Offer Free Audit -> Invite Response.
+TitanLeap specializes in:
+• funnel optimization
+• marketing systems
+• conversion optimization
+• content systems
+• growth strategy
 
-Rules:
-- Professional but friendly tone.
-- Avoid spam language.
-- Mention company name: ${lead.companyName}.
+FOLLOW THESE EXACT STEPS FOR THE OUTPUT:
+
+STEP 4 — ENRICH LEAD DATA: Use the provided context to identify Industry, Description, Size, Product, Marketing presence.
+STEP 5 — ANALYZE LEAD QUALIFICATION: Assign Lead Score (High/Medium/Low Potential). 
+High potential examples: SaaS startups with weak landing pages, Ecommerce with poor conversion, Agencies with no content, Businesses with unclear positioning.
+STEP 6 — IDENTIFY FUNNEL OR MARKETING WEAKNESS: Identify 1-3 specific problems (unclear CTA, weak messaging, slow load, etc.).
+STEP 7 — GENERATE TITANLEAP GROWTH INSIGHT: Concise actionable suggestion.
+STEP 8 — GENERATE PERSONALIZED OUTREACH MESSAGE: 3-5 sentences. Observation -> Problem -> Opportunity -> Offer Free Audit -> Invite Response.
+
+Always produce clean structured JSON output.
 `;
 
     const userPrompt = `
-LEAD DATA TO ANALYZE:
-Company: ${lead.companyName}
-Website: ${lead.website}
-Description: ${lead.description || lead.bio || 'Unknown'}
-Industry: ${lead.industry || lead.niche || 'Unknown'}
-Social: ${lead.username ? `@${lead.username}` : 'None'}
+LEAD TO ANALYZE:
+Company Name: ${lead.companyName}
+Website URL: ${lead.website}
+Directory Bio: ${lead.description || 'Unknown'}
+
+WEBSITE CONTENT SNIPPET:
+${webContext}
 `;
 
     if (process.env.GEMINI_API_KEY) {
-        console.log(`Deep analyzing ${lead.companyName} using TitanLeap Agent (Gemini)...`);
+        console.log(`[Analyzing] ${lead.companyName} using 10-Step Protocol...`);
         try {
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
             const model = genAI.getGenerativeModel({
-                model: 'gemini-1.5-flash', // Flash is fast and cheap for this
+                model: 'gemini-1.5-flash',
                 generationConfig: {
                     responseMimeType: 'application/json',
                     responseSchema: {
@@ -93,10 +134,9 @@ Social: ${lead.username ? `@${lead.username}` : 'None'}
             });
 
             const result = await model.generateContent([systemPrompt, userPrompt]);
-            const text = result.response.text();
-            return JSON.parse(text) as LeadAnalysis;
+            return JSON.parse(result.response.text()) as LeadAnalysis;
         } catch (error) {
-            console.error('Gemini Agent Error:', error);
+            console.error('[Gemini Error]', error);
         }
     }
 

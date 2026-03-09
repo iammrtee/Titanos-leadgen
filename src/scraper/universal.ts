@@ -37,7 +37,7 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
     console.log('[Universal Scraper] Discovering potential product links...');
 
     const potentialLinks = await page.evaluate(() => {
-        const results: { title: string, url: string, confidence: number }[] = [];
+        const results: { title: string, url: string, confidence: number, followerCount?: string, niche?: string }[] = [];
         const seen = new Set();
 
         // Strategy 1: Targeted path patterns
@@ -57,23 +57,38 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
             const lowerText = text.toLowerCase();
             const lowerHref = href.toLowerCase();
 
-            // Ignore navigation/legal/social common links
+            // Ignore navigation/legal/social (platform help etc)
             if (lowerHref.includes('login') || lowerHref.includes('signin') ||
-                lowerHref.includes('twitter.com') || lowerHref.includes('facebook.com') ||
-                lowerHref.includes('privacy') || lowerHref.includes('terms')) continue;
+                lowerHref.includes('privacy') || lowerHref.includes('terms') ||
+                lowerHref.includes('cookie') || lowerHref.includes('help')) continue;
 
-            // Pattern Match
+            // Pattern Match for startup cards or profile links
             if (pathPatterns.some(p => lowerHref.includes(p))) confidence += 50;
             if (keywordPatterns.some(k => lowerText.includes(k))) confidence += 30;
 
-            // Heuristic: Titles often in H2/H3 or bold or specific card classes
-            const parentCard = a.closest('div, li, section');
-            const h2 = parentCard?.querySelector('h1, h2, h3, h4');
+            // Step 3: Extract metrics if available in parent
+            const parentCard = a.closest('div, li, section, article');
+            const h2 = parentCard?.querySelector('h1, h2, h3, h4, .title, .name');
             const title = h2?.textContent?.trim() || text;
 
-            if (title.length > 2 && confidence > 0) {
+            // Look for follower counts or niche tags
+            const metadata = parentCard?.textContent || '';
+            const followerMatch = metadata.match(/(\d+[,.]?\d*[kKmM]?)\s*(followers|votes|users)/i);
+            const followerCount = followerMatch ? followerMatch[1] : undefined;
+
+            // Look for industry/niche tags
+            const nicheTags = Array.from(parentCard?.querySelectorAll('.tag, .category, .badge') || [])
+                .map(el => el.textContent?.trim()).join(', ');
+
+            if (title.length > 2 && (confidence > 0)) { // Removed `isDirectoryLink` as it's not defined in this scope
                 seen.add(href);
-                results.push({ title, url: href, confidence });
+                results.push({
+                    title,
+                    url: href,
+                    confidence,
+                    followerCount,
+                    niche: nicheTags
+                });
             }
         }
 
