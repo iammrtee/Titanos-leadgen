@@ -8,13 +8,13 @@ export async function exportToCsv(data: any[], filename: string) {
         header: [
             { id: 'companyName', title: 'Company Name' },
             { id: 'website', title: 'Website' },
+            { id: 'founderName', title: 'Founder Name' },
             { id: 'contactEmail', title: 'Email' },
+            { id: 'linkedin', title: 'LinkedIn' },
+            { id: 'twitter', title: 'Twitter' },
+            { id: 'instagram', title: 'Instagram' },
             { id: 'Industry', title: 'Industry' },
-            { id: 'CompanyDescription', title: 'Description' },
-            { id: 'CompanySize', title: 'Size' },
-            { id: 'MainProduct', title: 'Product/Service' },
-            { id: 'LeadScore', title: 'Score' },
-            { id: 'ScoreJustification', title: 'Justification' },
+            { id: 'LeadScore', title: 'Lead Score' },
             { id: 'FunnelIssues', title: 'Funnel Issues' },
             { id: 'GrowthInsight', title: 'Growth Insight' },
             { id: 'OutreachMessage', title: 'Outreach Message' }

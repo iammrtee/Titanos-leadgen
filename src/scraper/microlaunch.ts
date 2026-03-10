@@ -6,15 +6,15 @@ export interface Lead {
     website: string;
     description?: string;
     industry?: string;
-    // Step 3 Extended Fields
-    username?: string;
-    bio?: string;
-    followerCount?: string;
-    niche?: string;
-    contactEmail?: string;
-    // Status tracking
     status: 'scraped' | 'analyzed';
     analysisDate?: string;
+
+    // Contact & Socials
+    founderName?: string;
+    contactEmail?: string;
+    linkedin?: string;
+    twitter?: string;
+    instagram?: string;
 
     // Analysis Fields (Step 9)
     Industry?: string;
