@@ -47,10 +47,14 @@ async function resolveWithAI(page: any, context: string): Promise<string | null>
 }
 
 export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
+    console.log(`[Universal Scraper] Cache Dir: ${process.env.PUPPETEER_CACHE_DIR || 'default'}`);
+    console.log(`[Universal Scraper] Launching browser...`);
     const browser = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
+    console.log(`[Universal Scraper] Browser launched successfully.`);
+
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 1600 });
