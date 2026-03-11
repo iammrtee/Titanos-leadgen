@@ -11,9 +11,21 @@ import path from 'path';
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log(`[Startup] Environment: ${process.env.NODE_ENV}`);
-console.log(`[Startup] PORT: ${PORT}`);
-console.log(`[Startup] CWD: ${process.cwd()}`);
+const logDir = (dir: string, depth = 0) => {
+    if (depth > 2) return;
+    try {
+        const entries = fs.readdirSync(dir);
+        console.log(`${'  '.repeat(depth)}[DIR] ${dir}: ${entries.join(', ')}`);
+        entries.forEach(e => {
+            const p = path.join(dir, e);
+            if (fs.statSync(p).isDirectory()) logDir(p, depth + 1);
+        });
+    } catch (e) {}
+};
+
+console.log('--- STARTUP FILESYSTEM SCAN ---');
+logDir(process.cwd());
+console.log('--- END STARTUP FILESYSTEM SCAN ---');
 
 app.use(cors());
 app.use(express.json());
@@ -27,7 +39,7 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.2.0-DIST-PERSIST',
+        version: 'v2.2.0-STARTUP-SCAN',
         time: new Date().toISOString()
     });
 });
