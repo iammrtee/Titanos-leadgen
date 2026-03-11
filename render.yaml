@@ -4,6 +4,7 @@ services:
     env: node
     buildCommand: npm ci && npm run build && npx puppeteer browsers install chromium
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
