@@ -33,7 +33,7 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.2.0-FINAL-ATTEMPT',
+        version: 'v2.2.0-EXECUTABLE-SCRIPT',
         time: new Date().toISOString(),
         port: PORT,
         env: process.env.NODE_ENV
