@@ -27,25 +27,9 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.2.0-CONSOLIDATED-FIX',
-        time: new Date().toISOString(),
-        port: PORT,
-        env: process.env.NODE_ENV
+        version: 'v2.2.0-STABLE-v4',
+        time: new Date().toISOString()
     });
-});
-
-app.get('/api/debug-files', (req, res) => {
-    const files = ['render.yaml', 'package.json'];
-    const result: any = {};
-    files.forEach(f => {
-        const p = path.join(process.cwd(), f);
-        if (fs.existsSync(p)) {
-            result[f] = fs.readFileSync(p, 'utf8');
-        } else {
-            result[f] = 'NOT_FOUND';
-        }
-    });
-    res.json(result);
 });
 
 app.use(express.static('public'));

@@ -4,14 +4,14 @@ set -o errexit
 
 echo "--- Starting Build ---"
 npm ci
-npm run build
+npm run build # this runs tsc
 
 echo "--- Installing Chrome for Puppeteer ---"
-# Clear any old attempts
+# Clear any old attempts to be safe
 rm -rf ./puppeteer_cache
 mkdir -p ./puppeteer_cache
 
-# Use the exact path we want to persist
+# Install exactly where we want it
 npx puppeteer browsers install chrome --path ./puppeteer_cache
 
 echo "--- Verifying Chrome installation ---"
