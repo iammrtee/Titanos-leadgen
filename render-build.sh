@@ -2,13 +2,23 @@
 # exit on error
 set -o errexit
 
-npm install
+echo "--- Starting Build ---"
+npm ci
 npm run build
 
-# Verify build output
-echo "Checking build output..."
-ls -R dist
+echo "--- Installing Chrome for Puppeteer ---"
+# Clear any old attempts
+rm -rf ./puppeteer_cache
+mkdir -p ./puppeteer_cache
 
-# Install Puppeteer browsers in the cache directory
-# This ensures they are persisted between builds on Render if path matches
-npx puppeteer browsers install chromium
+# Use the exact path we want to persist
+npx puppeteer browsers install chrome --path ./puppeteer_cache
+
+echo "--- Verifying Chrome installation ---"
+if [ -d "./puppeteer_cache" ]; then
+    echo "Directory exists"
+    find ./puppeteer_cache -maxdepth 3
+else
+    echo "ERROR: Directory not found"
+    exit 1
+fi
