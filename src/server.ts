@@ -33,6 +33,31 @@ app.get('/api/status', (req, res) => {
     });
 });
 
+app.get('/api/debug-fs', (req, res) => {
+    const cacheDir = process.env.PUPPETEER_CACHE_DIR || path.join(process.cwd(), '.cache', 'puppeteer');
+    try {
+        const listFiles = (dir: string, depth = 0): any => {
+            if (depth > 3) return '...depth limit';
+            if (!fs.existsSync(dir)) return 'DIR NOT FOUND';
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+            return entries.map(e => {
+                const fullPath = path.join(dir, e.name);
+                if (e.isDirectory()) {
+                    return { name: e.name, type: 'dir', children: listFiles(fullPath, depth + 1) };
+                }
+                return { name: e.name, type: 'file' };
+            });
+        };
+        res.json({
+            cwd: process.cwd(),
+            cacheDir,
+            contents: listFiles(cacheDir)
+        });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message, cacheDir });
+    }
+});
+
 app.use(express.static('public'));
 
 // Endpoint to trigger scraping (Discovery)
