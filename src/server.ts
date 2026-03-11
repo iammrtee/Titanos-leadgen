@@ -27,6 +27,7 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
+        version: 'v2.2.0-debug-v5',
         time: new Date().toISOString(),
         port: PORT,
         env: process.env.NODE_ENV
