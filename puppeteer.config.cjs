@@ -5,5 +5,6 @@ const { join } = require('path');
  */
 module.exports = {
     // Changes the cache location for Puppeteer.
-    cacheDirectory: join(__dirname, 'browser_bin'),
+    // At runtime, this file is in the root, and we want to look in dist/browser_bin
+    cacheDirectory: join(__dirname, 'dist', 'browser_bin'),
 };

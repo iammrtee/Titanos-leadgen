@@ -27,7 +27,7 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.2.0-BROWSER-BIN',
+        version: 'v2.2.0-DIST-PERSIST',
         time: new Date().toISOString()
     });
 });
