@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: titan-lead-scraper
+    name: Titanos-leadgen
     env: node
-    buildCommand: npm install && npm run build
+    buildCommand: ./render-build.sh
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -11,5 +11,3 @@ services:
         value: 10000
       - key: PUPPETEER_CACHE_DIR
         value: /opt/render/project/src/.cache/puppeteer
-      - key: PUPPETEER_SKIP_CHROME_DOWNLOAD
-        value: "true"

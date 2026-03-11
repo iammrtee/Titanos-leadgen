@@ -15,6 +15,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+// Health check for Render
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
 // Endpoint to trigger scraping (Discovery)
 app.post('/api/generate', async (req, res) => {
     try {
@@ -87,7 +92,7 @@ app.get('/api/export', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`TitanLeap Acquisition Dashboard running on http://localhost:${PORT}`);
+app.listen(Number(PORT), '0.0.0.0', () => {
+    console.log(`TitanLeap Acquisition Dashboard running on http://0.0.0.0:${PORT}`);
 });
 export default app;
