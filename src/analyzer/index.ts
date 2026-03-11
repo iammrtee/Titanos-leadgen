@@ -33,10 +33,12 @@ async function getWebsiteContext(url: string): Promise<string> {
 
     let browser;
     try {
+        console.log(`[Enrichment] Attempting browser launch for analysis...`);
         browser = await puppeteer.launch({
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
         });
+        console.log(`[Enrichment] Browser launched: ${browser.process()?.pid}`);
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
