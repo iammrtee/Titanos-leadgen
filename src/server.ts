@@ -27,15 +27,25 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.2.0-DIAG-v2',
+        version: 'v2.2.0-TELEMETRY',
         time: new Date().toISOString()
     });
+});
+
+app.get('/api/build-log', (req, res) => {
+    const logPath = path.join(process.cwd(), 'build.log');
+    if (fs.existsSync(logPath)) {
+        res.type('text/plain').send(fs.readFileSync(logPath, 'utf8'));
+    } else {
+        res.status(404).send('Build log not found');
+    }
 });
 
 app.get('/api/debug-fs', (req, res) => {
     const projectRoot = process.cwd();
     const possiblePaths = [
         { name: 'PUP_CACHE', path: path.join(projectRoot, 'puppeteer_cache') },
+        { name: 'DIST', path: path.join(projectRoot, 'dist') },
         { name: 'ROOT', path: projectRoot }
     ];
 
