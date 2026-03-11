@@ -9,7 +9,11 @@ import fs from 'fs';
 import path from 'path';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
+
+console.log(`[Startup] Environment: ${process.env.NODE_ENV}`);
+console.log(`[Startup] PORT: ${PORT}`);
+console.log(`[Startup] CWD: ${process.cwd()}`);
 
 app.use(cors());
 app.use(express.json());
