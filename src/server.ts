@@ -34,27 +34,45 @@ app.get('/api/status', (req, res) => {
 });
 
 app.get('/api/debug-fs', (req, res) => {
-    const cacheDir = process.env.PUPPETEER_CACHE_DIR || path.join(process.cwd(), '.cache', 'puppeteer');
+    const envCache = process.env.PUPPETEER_CACHE_DIR;
+    const projectRoot = process.cwd();
+    const possiblePaths = [
+        { name: 'ENV_VAR', path: envCache },
+        { name: 'DEFAULT_HIDDEN', path: path.join(projectRoot, '.cache', 'puppeteer') },
+        { name: 'RELATIVE_PUP', path: path.join(projectRoot, '.puppeteer-cache') },
+        { name: 'NEW_CACHE', path: path.join(projectRoot, 'puppeteer_cache_new') }
+    ];
+
     try {
-        const listFiles = (dir: string, depth = 0): any => {
-            if (depth > 3) return '...depth limit';
-            if (!fs.existsSync(dir)) return 'DIR NOT FOUND';
-            const entries = fs.readdirSync(dir, { withFileTypes: true });
+        const listFiles = (dir: string | undefined, depth = 0): any => {
+            if (!dir) return 'UNDEFINED';
+            if (depth > 2) return '...depth limit';
+            const target = path.isAbsolute(dir) ? dir : path.join(projectRoot, dir);
+            if (!fs.existsSync(target)) return 'NOT_FOUND';
+            
+            const entries = fs.readdirSync(target, { withFileTypes: true });
             return entries.map(e => {
-                const fullPath = path.join(dir, e.name);
+                const fullPath = path.join(target, e.name);
                 if (e.isDirectory()) {
                     return { name: e.name, type: 'dir', children: listFiles(fullPath, depth + 1) };
                 }
                 return { name: e.name, type: 'file' };
             });
         };
+
+        const diagnostics = possiblePaths.map(p => ({
+            name: p.name,
+            path: p.path,
+            contents: listFiles(p.path)
+        }));
+
         res.json({
-            cwd: process.cwd(),
-            cacheDir,
-            contents: listFiles(cacheDir)
+            timestamp: new Date().toISOString(),
+            cwd: projectRoot,
+            diagnostics
         });
     } catch (err: any) {
-        res.status(500).json({ error: err.message, cacheDir });
+        res.status(500).json({ error: err.message });
     }
 });
 

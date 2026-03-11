@@ -2,11 +2,11 @@ services:
   - type: web
     name: Titanos-leadgen
     env: node
-    buildCommand: npm ci && npm run build && npx puppeteer browsers install chrome --path ./.puppeteer-cache
+    buildCommand: npm ci && npm run build && npx puppeteer browsers install chrome --path ./puppeteer_cache_new
     startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PUPPETEER_CACHE_DIR
-        value: ./.puppeteer-cache
+        value: ./puppeteer_cache_new
