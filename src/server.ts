@@ -107,7 +107,9 @@ app.get('/api/export', async (req, res) => {
     }
 });
 
-app.listen(Number(PORT), '0.0.0.0', () => {
-    console.log(`TitanLeap Acquisition Dashboard running on http://0.0.0.0:${PORT}`);
+const portToListen = parseInt(String(PORT), 10) || 10000;
+
+app.listen(portToListen, '0.0.0.0', () => {
+    console.log(`TitanLeap Acquisition Dashboard running on port ${portToListen}`);
 });
 export default app;

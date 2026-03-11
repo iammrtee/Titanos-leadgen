@@ -2,7 +2,7 @@ services:
   - type: web
     name: Titanos-leadgen
     env: node
-    buildCommand: npm install && npm run build && npx puppeteer browsers install chromium
+    buildCommand: npm ci && npm run build && npx puppeteer browsers install chromium
     startCommand: npm start
     envVars:
       - key: NODE_ENV
