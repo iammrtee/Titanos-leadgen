@@ -48,12 +48,58 @@ async function resolveWithAI(page: any, context: string): Promise<string | null>
 
 export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
     console.log(`[Universal Scraper] Cache Dir: ${process.env.PUPPETEER_CACHE_DIR || 'default'}`);
-    console.log(`[Universal Scraper] Launching browser...`);
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-    });
-    console.log(`[Universal Scraper] Browser launched successfully.`);
+    console.log(`[Universal Scraper] Launching browser (chromium)...`);
+    
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: true,
+            args: [
+                '--no-sandbox', 
+                '--disable-setuid-sandbox', 
+                '--disable-dev-shm-usage',
+                '--disable-gpu'
+            ]
+        });
+        console.log(`[Universal Scraper] Browser launched successfully.`);
+    } catch (e: any) {
+        console.error('[Universal Scraper] CRITICAL: Browser launch failed!', e);
+        
+        // Detailed Diagnostics for Render/Cloud environments
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const cacheDir = process.env.PUPPETEER_CACHE_DIR || '/opt/render/project/src/.cache/puppeteer';
+            
+            console.log(`[Diagnostic] Checking Cache Dir: ${cacheDir}`);
+            if (fs.existsSync(cacheDir)) {
+                const contents = fs.readdirSync(cacheDir);
+                console.log(`[Diagnostic] Cache Dir Contents: ${contents.join(', ')}`);
+                
+                // Check for Chromium binary specifically
+                const searchDirs = [cacheDir];
+                while (searchDirs.length > 0) {
+                    const current = searchDirs.shift();
+                    const items = fs.readdirSync(current);
+                    for (const item of items) {
+                        const fullPath = path.join(current, item);
+                        if (fs.statSync(fullPath).isDirectory()) {
+                            searchDirs.push(fullPath);
+                        } else if (item.toLowerCase().includes('chromium') || item.toLowerCase() === 'chrome') {
+                            console.log(`[Diagnostic] Found potential binary: ${fullPath} (Perms: ${fs.statSync(fullPath).mode})`);
+                        }
+                    }
+                    if (searchDirs.length > 50) break; // Safety break
+                }
+            } else {
+                console.log(`[Diagnostic] Cache Dir NOT found.`);
+            }
+        } catch (diagErr) {
+            console.error('[Diagnostic] Error during directory search:', diagErr);
+        }
+        
+        throw new Error(`Browser launch failed: ${e.message}. See logs for diagnostics.`);
+    }
 
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
