@@ -11,6 +11,12 @@ import path from 'path';
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Force set Puppeteer cache for Render environment consistency
+if (process.env.NODE_ENV === 'production') {
+    process.env.PUPPETEER_CACHE_DIR = path.join(process.cwd(), 'puppeteer_cache');
+    console.log(`[Service] Production environment detected. Set cache to: ${process.env.PUPPETEER_CACHE_DIR}`);
+}
+
 console.log(`[Startup] Environment: ${process.env.NODE_ENV}`);
 console.log(`[Startup] PORT: ${PORT}`);
 console.log(`[Startup] CWD: ${process.cwd()}`);
@@ -39,9 +45,9 @@ app.get('/api/debug-fs', (req, res) => {
     const projectRoot = process.cwd();
     const possiblePaths = [
         { name: 'ENV_VAR', path: envCache },
-        { name: 'DEFAULT_HIDDEN', path: path.join(projectRoot, '.cache', 'puppeteer') },
-        { name: 'RELATIVE_PUP', path: path.join(projectRoot, '.puppeteer-cache') },
-        { name: 'NEW_CACHE', path: path.join(projectRoot, 'puppeteer_cache_new') }
+        { name: 'ROOT_SCAN', path: projectRoot },
+        { name: 'PUP_CACHE_NEW', path: path.join(projectRoot, 'puppeteer_cache_new') },
+        { name: 'PUP_CACHE_STABLE', path: path.join(projectRoot, 'puppeteer_cache') }
     ];
 
     try {
