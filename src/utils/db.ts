@@ -26,6 +26,7 @@ export async function addLeads(newLeads: Lead[]): Promise<number> {
 
     for (const lead of newLeads) {
         if (!existingWebsites.has(lead.website)) {
+            lead.createdAt = new Date().toISOString();
             toAdd.push(lead);
             addedCount++;
         }
@@ -42,4 +43,10 @@ export async function updateLead(id: string, updates: Partial<Lead>): Promise<vo
         leads[index] = { ...leads[index], ...updates };
         await saveLeads(leads);
     }
+}
+
+export async function getTodaysLeadCount(): Promise<number> {
+    const leads = await readLeads();
+    const today = new Date().toISOString().split('T')[0];
+    return leads.filter(l => l.createdAt && l.createdAt.startsWith(today)).length;
 }

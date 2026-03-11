@@ -8,6 +8,7 @@ export interface Lead {
     industry?: string;
     status: 'scraped' | 'analyzed';
     analysisDate?: string;
+    createdAt?: string;
 
     // Contact & Socials
     founderName?: string;

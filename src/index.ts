@@ -1,17 +1,29 @@
 import { scrapeUniversal } from './scraper/universal';
-import { addLeads } from './utils/db';
+import { addLeads, getTodaysLeadCount } from './utils/db';
+
+const DAILY_LIMIT = 200;
 
 export async function runScraper(targetUrl: string, limit = 5): Promise<number> {
-    console.log(`Starting TitanLeap Discovery Protocol on: ${targetUrl}`);
+    console.log(`\n--- [TITANLEAP DISCOVERY PROTOCOL START] ---`);
+    console.log(`Target: ${targetUrl} | Limit: ${limit}`);
+
+    // Check Daily Quota
+    const currentCount = await getTodaysLeadCount();
+    if (currentCount >= DAILY_LIMIT) {
+        console.warn(`[Quota] Daily limit reached (${currentCount}/${DAILY_LIMIT}). Aborting discovery.`);
+        throw new Error(`Daily lead limit reached (${DAILY_LIMIT}). Try again tomorrow.`);
+    }
+    
+    console.log(`[Quota] Daily progress: ${currentCount}/${DAILY_LIMIT} leads.`);
 
     // 1. Scrape Leads
-    console.log(`Scraping leads (limit: ${limit}) from source...`);
     const rawLeads = await scrapeUniversal(targetUrl, limit);
-    console.log(`Scraped ${rawLeads.length} leads.`);
+    console.log(`[Discovery] Extraction phase complete. Scraped ${rawLeads.length} leads.`);
 
     // 2. Persist to DB (Step 10: Deduplicate)
     const addedCount = await addLeads(rawLeads);
-    console.log(`Added ${addedCount} new unique leads to the database.`);
+    console.log(`[Database] Added ${addedCount} new unique leads to the system.`);
+    console.log(`--- [TITANLEAP DISCOVERY PROTOCOL END] ---\n`);
 
     return addedCount;
 }
