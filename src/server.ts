@@ -27,9 +27,46 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.2.0-STABLE-v4',
+        version: 'v2.2.0-DIAG-v2',
         time: new Date().toISOString()
     });
+});
+
+app.get('/api/debug-fs', (req, res) => {
+    const projectRoot = process.cwd();
+    const possiblePaths = [
+        { name: 'PUP_CACHE', path: path.join(projectRoot, 'puppeteer_cache') },
+        { name: 'ROOT', path: projectRoot }
+    ];
+
+    try {
+        const listFiles = (dir: string, depth = 0): any => {
+            if (depth > 4) return '...depth limit';
+            if (!fs.existsSync(dir)) return 'NOT_FOUND';
+            
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+            return entries.map(e => {
+                const fullPath = path.join(dir, e.name);
+                if (e.isDirectory()) {
+                    return { name: e.name, type: 'dir', children: listFiles(fullPath, depth + 1) };
+                }
+                return { name: e.name, type: 'file' };
+            });
+        };
+
+        const diagnostics = possiblePaths.map(p => ({
+            name: p.name,
+            path: p.path,
+            contents: listFiles(p.path)
+        }));
+
+        res.json({
+            timestamp: new Date().toISOString(),
+            diagnostics
+        });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.use(express.static('public'));

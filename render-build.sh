@@ -2,23 +2,15 @@
 # exit on error
 set -o errexit
 
-echo "--- Starting Build ---"
-npm ci
-npm run build # this runs tsc
+echo "--- Starting Build ---" | tee build.log
+npm ci | tee -a build.log
+npm run build | tee -a build.log
 
-echo "--- Installing Chrome for Puppeteer ---"
-# Clear any old attempts to be safe
+echo "--- Installing Chrome for Puppeteer ---" | tee -a build.log
 rm -rf ./puppeteer_cache
 mkdir -p ./puppeteer_cache
 
-# Install exactly where we want it
-npx puppeteer browsers install chrome --path ./puppeteer_cache
+npx puppeteer browsers install chrome --path ./puppeteer_cache | tee -a build.log
 
-echo "--- Verifying Chrome installation ---"
-if [ -d "./puppeteer_cache" ]; then
-    echo "Directory exists"
-    find ./puppeteer_cache -maxdepth 3
-else
-    echo "ERROR: Directory not found"
-    exit 1
-fi
+echo "--- Verifying Chrome installation ---" | tee -a build.log
+ls -R ./puppeteer_cache | tee -a build.log
