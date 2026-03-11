@@ -27,17 +27,17 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.2.0-TELEMETRY',
+        version: 'v2.2.0-BROWSER-BIN',
         time: new Date().toISOString()
     });
 });
 
 app.get('/api/build-log', (req, res) => {
-    const logPath = path.join(process.cwd(), 'build.log');
+    const logPath = path.join(process.cwd(), 'dist', 'build.log');
     if (fs.existsSync(logPath)) {
         res.type('text/plain').send(fs.readFileSync(logPath, 'utf8'));
     } else {
-        res.status(404).send('Build log not found');
+        res.status(404).send('Build log not found at ' + logPath);
     }
 });
 
