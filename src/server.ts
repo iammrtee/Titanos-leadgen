@@ -11,15 +11,19 @@ import path from 'path';
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Force set Puppeteer cache for Render environment consistency
-if (process.env.NODE_ENV === 'production') {
-    process.env.PUPPETEER_CACHE_DIR = path.join(process.cwd(), 'puppeteer_cache');
-    console.log(`[Service] Production environment detected. Set cache to: ${process.env.PUPPETEER_CACHE_DIR}`);
-}
+// Persistent logging for Render diagnostics
+const LOG_FILE = path.join(process.cwd(), 'startup.log');
+const log = (msg: string) => {
+    try {
+        const entry = `[${new Date().toISOString()}] ${msg}\n`;
+        fs.appendFileSync(LOG_FILE, entry);
+    } catch (e) {}
+    console.log(msg);
+};
 
-console.log(`[Startup] Environment: ${process.env.NODE_ENV}`);
-console.log(`[Startup] PORT: ${PORT}`);
-console.log(`[Startup] CWD: ${process.cwd()}`);
+log(`[Startup] Environment: ${process.env.NODE_ENV}`);
+log(`[Startup] PORT: ${PORT}`);
+log(`[Startup] CWD: ${process.cwd()}`);
 
 app.use(cors());
 app.use(express.json());
@@ -33,11 +37,20 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.2.0-ZERO-CONFIG',
+        version: 'v2.2.0-LOGGING-FIX',
         time: new Date().toISOString(),
         port: PORT,
-        env: process.env.NODE_ENV
+        env: process.env.NODE_ENV,
+        logs: `https://${req.get('host')}/api/debug-logs`
     });
+});
+
+app.get('/api/debug-logs', (req, res) => {
+    if (fs.existsSync(LOG_FILE)) {
+        res.type('text/plain').send(fs.readFileSync(LOG_FILE, 'utf8'));
+    } else {
+        res.status(404).send('No logs found');
+    }
 });
 
 app.get('/api/debug-files', (req, res) => {
