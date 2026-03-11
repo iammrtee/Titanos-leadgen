@@ -17,12 +17,23 @@ console.log(`[Startup] CWD: ${process.cwd()}`);
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
-// Health check for Render
+// Health check for Render (PRIORITY)
 app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
+
+// Diagnostic endpoint
+app.get('/api/status', (req, res) => {
+    res.json({
+        status: 'online',
+        time: new Date().toISOString(),
+        port: PORT,
+        env: process.env.NODE_ENV
+    });
+});
+
+app.use(express.static('public'));
 
 // Endpoint to trigger scraping (Discovery)
 app.post('/api/generate', async (req, res) => {
