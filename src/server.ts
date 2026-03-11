@@ -40,47 +40,18 @@ app.get('/api/status', (req, res) => {
     });
 });
 
-app.get('/api/debug-fs', (req, res) => {
-    const envCache = process.env.PUPPETEER_CACHE_DIR;
-    const projectRoot = process.cwd();
-    const possiblePaths = [
-        { name: 'ENV_VAR', path: envCache },
-        { name: 'ROOT_SCAN', path: projectRoot },
-        { name: 'PUP_CACHE_NEW', path: path.join(projectRoot, 'puppeteer_cache_new') },
-        { name: 'PUP_CACHE_STABLE', path: path.join(projectRoot, 'puppeteer_cache') }
-    ];
-
-    try {
-        const listFiles = (dir: string | undefined, depth = 0): any => {
-            if (!dir) return 'UNDEFINED';
-            if (depth > 2) return '...depth limit';
-            const target = path.isAbsolute(dir) ? dir : path.join(projectRoot, dir);
-            if (!fs.existsSync(target)) return 'NOT_FOUND';
-            
-            const entries = fs.readdirSync(target, { withFileTypes: true });
-            return entries.map(e => {
-                const fullPath = path.join(target, e.name);
-                if (e.isDirectory()) {
-                    return { name: e.name, type: 'dir', children: listFiles(fullPath, depth + 1) };
-                }
-                return { name: e.name, type: 'file' };
-            });
-        };
-
-        const diagnostics = possiblePaths.map(p => ({
-            name: p.name,
-            path: p.path,
-            contents: listFiles(p.path)
-        }));
-
-        res.json({
-            timestamp: new Date().toISOString(),
-            cwd: projectRoot,
-            diagnostics
-        });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
+app.get('/api/debug-files', (req, res) => {
+    const files = ['render.yaml', 'package.json'];
+    const result: any = {};
+    files.forEach(f => {
+        const p = path.join(process.cwd(), f);
+        if (fs.existsSync(p)) {
+            result[f] = fs.readFileSync(p, 'utf8');
+        } else {
+            result[f] = 'NOT_FOUND';
+        }
+    });
+    res.json(result);
 });
 
 app.use(express.static('public'));
