@@ -5,5 +5,5 @@ const { join } = require('path');
  */
 module.exports = {
     // Standardize cache location for Render and Local
-    cacheDirectory: join(__dirname, 'puppeteer_cache'),
+    cacheDirectory: join(__dirname, 'dist', 'puppeteer_cache'),
 };

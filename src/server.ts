@@ -45,7 +45,7 @@ app.get('/api/status', (req, res) => {
 });
 
 app.get('/api/build-log', (req, res) => {
-    const logPath = path.join(process.cwd(), 'dist', 'build.log');
+    const logPath = path.join(process.cwd(), 'build.log');
     if (fs.existsSync(logPath)) {
         res.type('text/plain').send(fs.readFileSync(logPath, 'utf8'));
     } else {
@@ -56,7 +56,7 @@ app.get('/api/build-log', (req, res) => {
 app.get('/api/debug-fs', (req, res) => {
     const projectRoot = process.cwd();
     const possiblePaths = [
-        { name: 'PUP_CACHE', path: path.join(projectRoot, 'puppeteer_cache') },
+        { name: 'PUP_CACHE', path: path.join(projectRoot, 'dist', 'puppeteer_cache') },
         { name: 'DIST', path: path.join(projectRoot, 'dist') },
         { name: 'ROOT', path: projectRoot }
     ];
