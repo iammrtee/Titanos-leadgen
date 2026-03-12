@@ -87,6 +87,15 @@ app.get('/api/debug-fs', (req, res) => {
             contents: listFiles(p.path)
         }));
 
+        // Add shell diagnostics
+        try {
+            const { execSync } = require('child_process');
+            const chromePath = execSync('which google-chrome-stable || which google-chrome || which chrome').toString().trim();
+            diagnostics.push({ name: 'SHELL_WHICH_CHROME', path: 'n/a', contents: chromePath } as any);
+        } catch (e: any) {
+            diagnostics.push({ name: 'SHELL_WHICH_CHROME', path: 'n/a', contents: `NOT_FOUND: ${e.message}` } as any);
+        }
+
         res.json({
             timestamp: new Date().toISOString(),
             diagnostics
