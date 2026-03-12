@@ -67,33 +67,26 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
         console.log(`[Universal Scraper] Cache Dir: ${cacheDir}`);
         
         // Explicit binary resolution for Docker/Render
-        let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
+        const browserlessUrl = process.env.BROWSERLESS_URL;
         
-        if (!executablePath && process.env.RENDER) {
-            const candidates = ['/usr/bin/google-chrome-stable', '/usr/bin/google-chrome', '/usr/bin/chrome'];
-            for (const c of candidates) {
-                if (fs.existsSync(c)) {
-                    executablePath = c;
-                    break;
-                }
-            }
+        if (browserlessUrl) {
+            console.log(`[Universal Scraper] Connecting to Browserless: ${browserlessUrl}`);
+            browser = await puppeteer.connect({ browserWSEndpoint: browserlessUrl });
+        } else {
+            console.log(`[Universal Scraper] Attempting local browser launch: ${executablePath}`);
+            browser = await puppeteer.launch({
+                executablePath: executablePath,
+                headless: true,
+                args: [
+                    '--no-sandbox', 
+                    '--disable-setuid-sandbox', 
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu'
+                ]
+            });
         }
-        
-        if (!executablePath) executablePath = '/usr/bin/google-chrome-stable';
-        
-        console.log(`[Universal Scraper] Attempting browser launch with: ${executablePath}`);
-        browser = await puppeteer.launch({
-            executablePath: executablePath,
-            headless: true,
-            args: [
-                '--no-sandbox', 
-                '--disable-setuid-sandbox', 
-                '--disable-dev-shm-usage',
-                '--disable-gpu'
-            ]
-        });
-        console.log(`[Universal Scraper] Browser launched successfully`);
-        console.log(`[Universal Scraper] Browser launched successfully`);
+        console.log(`[Universal Scraper] Browser instance ready`);
     } catch (e: any) {
         throw new Error(`Browser launch failed: ${e.message}`);
     }
