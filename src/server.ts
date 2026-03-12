@@ -113,10 +113,14 @@ app.post('/api/generate', async (req, res) => {
         const { url, limit = 5 } = req.body;
         if (!url) return res.status(400).json({ error: 'URL is required' });
 
-        const scraperResults = await runScraper(url, limit);
-        res.json({ success: true, count: scraperResults });
+        // Start scraping in background to avoid Render 30s timeout
+        runScraper(url, limit)
+            .then(count => console.log(`[Background] Discovery finished: Found ${count} leads`))
+            .catch(err => console.error(`[Background] Discovery failed:`, err));
+
+        res.json({ success: true, message: 'Discovery protocol initiated in background.' });
     } catch (error: any) {
-        console.error('Scraping Error:', error);
+        console.error('Scraping Initiation Error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

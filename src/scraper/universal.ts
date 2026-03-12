@@ -97,8 +97,9 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
 
     console.log(`[Universal Scraper] Navigating to source...`);
     try {
-        await page.goto(url, { waitUntil: 'networkidle0', timeout: 90000 });
-        await new Promise(r => setTimeout(r, 8000)); // Increased wait for cloud browser
+        // More aggressive navigation for background scraping
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+        await new Promise(r => setTimeout(r, 4000)); 
     } catch (err: any) {
         console.warn(`[Universal Scraper] Navigation warning: ${err.message}`);
     }
@@ -202,8 +203,8 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
             console.log(`[Deep Extraction] Opening: ${link.title}`);
             const subPage = await browser.newPage();
             try {
-                await subPage.goto(link.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-                await new Promise(r => setTimeout(r, 4000));
+                await subPage.goto(link.url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+                await new Promise(r => setTimeout(r, 2000));
 
                 const extraction = await subPage.evaluate(() => {
                     const anchors = Array.from(document.querySelectorAll('a'));

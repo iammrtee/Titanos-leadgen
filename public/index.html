@@ -436,17 +436,28 @@
                     body: JSON.stringify({ url, limit: leadLimit })
                 });
 
-                updateProgress(60, 'DEEP_SYNTHESIS_EXTRACTION');
-                const data = await res.json();
-                
-                if (!res.ok) throw new Error(data.error);
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Protocol overlap.');
+                }
 
-                updateProgress(95, 'FINALIZE_POOL_INGESTION');
-                setTimeout(() => {
-                    updateProgress(100, 'DISCOVERY_COMPLETE');
-                    loadLeads();
-                    resetStatus();
-                }, 1500);
+                // Polling Loop for Background Discovery
+                let pollCount = 0;
+                let initialLeadCount = leads.length;
+                
+                const pollInterval = setInterval(async () => {
+                    pollCount++;
+                    await loadLeads();
+                    
+                    const progress = Math.min(10 + (pollCount * 4), 95);
+                    updateProgress(progress, leads.length > initialLeadCount ? 'SYNCHRONIZING_NEURAL_RESULTS...' : 'DEEP_SYNTHESIS_EXTRACTION...');
+                    
+                    if (pollCount > 30 || (leads.length >= initialLeadCount + leadLimit)) {
+                        clearInterval(pollInterval);
+                        updateProgress(100, 'DISCOVERY_COMPLETE');
+                        resetStatus();
+                    }
+                }, 3000);
 
             } catch (err) {
                 alert(`Protocol Jammed: ${err.message}`);
