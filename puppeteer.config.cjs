@@ -5,5 +5,5 @@ const { join } = require('path');
  */
 module.exports = {
     // Standardize cache location for Render and Local
-    cacheDirectory: join(__dirname, 'chrome_bin'),
+    cacheDirectory: join(__dirname, 'node_modules', 'chrome_bin'),
 };
