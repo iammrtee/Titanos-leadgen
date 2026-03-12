@@ -39,7 +39,7 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v4.0.0-BROWSERLESS',
+        version: 'v4.1.0-SCRAPER-BOOST',
         time: new Date().toISOString()
     });
 });

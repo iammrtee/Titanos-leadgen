@@ -97,26 +97,26 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
 
     console.log(`[Universal Scraper] Navigating to source...`);
     try {
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-        await new Promise(r => setTimeout(r, 6000)); // Standard wait for JS
+        await page.goto(url, { waitUntil: 'networkidle0', timeout: 90000 });
+        await new Promise(r => setTimeout(r, 8000)); // Increased wait for cloud browser
     } catch (err) {
-        console.warn(`[Universal Scraper] Navigation error, attempting to proceed.`);
+        console.warn(`[Universal Scraper] Navigation warning: ${err.message}`);
     }
 
-    // Heavy scroll
+    // Heavy scroll with better timing
     await page.evaluate(async () => {
         await new Promise((resolve) => {
             let totalHeight = 0;
-            const distance = 400;
+            const distance = 500;
             const timer = setInterval(() => {
                 const scrollHeight = document.body.scrollHeight;
                 window.scrollBy(0, distance);
                 totalHeight += distance;
-                if (totalHeight >= scrollHeight || totalHeight >= 6000) {
+                if (totalHeight >= scrollHeight || totalHeight >= 8000) {
                     clearInterval(timer);
                     resolve(null);
                 }
-            }, 100);
+            }, 150);
         });
     });
 
@@ -129,7 +129,7 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
 
         const allAnchors = Array.from(document.querySelectorAll('a'));
         // Broaden patterns for various directories
-        const dirPatterns = ['/p/', '/product/', '/company/', '/startup/', '/app/', '/tools/', '/software/', '/apps/', '/tool/', '/deals/'];
+        const dirPatterns = ['/p/', '/product/', '/company/', '/startup/', '/app/', '/tools/', '/software/', '/apps/', '/tool/', '/deals/', '/launches/', '/projects/'];
         
         for (const a of allAnchors) {
             const href = a.href;
@@ -140,7 +140,7 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
             const text = a.innerText.trim();
             const lowerHref = href.toLowerCase();
 
-            if (['login', 'signup', 'pricing', 'about', 'join', 'contact', 'cookies', 'terms', 'privacy'].some(k => text.toLowerCase().includes(k))) continue;
+            if (['login', 'signup', 'pricing', 'about', 'join', 'contact', 'cookies', 'terms', 'privacy', 'blog', 'news', 'podcast'].some(k => text.toLowerCase().includes(k))) continue;
             
             let confidence = 0;
             // Pattern 1: Known directory segments
@@ -148,12 +148,12 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
                 confidence += 85;
             }
 
-            // Pattern 2: Single-level slugs with metadata-like parent (Discovery for sites like 1000.tools)
+            // Pattern 2: Single-level slugs with metadata-like parent
             const pathParts = urlObj.pathname.split('/').filter(Boolean);
             const parentNode = a.closest('div, article, li, section, tr, td');
             const pClass = parentNode?.className.toLowerCase() || '';
             const pId = parentNode?.id.toLowerCase() || '';
-            const isCard = pClass.includes('card') || pClass.includes('item') || pClass.includes('product') || pClass.includes('post') || pId.includes('product');
+            const isCard = pClass.includes('card') || pClass.includes('item') || pClass.includes('product') || pClass.includes('post') || pId.includes('product') || pClass.includes('flex');
             const hasHeading = a.querySelector('h1, h2, h3, h4, h5, h6, strong, b') || a.parentElement?.querySelector('h3, h4, h5, h6, strong, b');
 
             if (isInternal && pathParts.length === 1 && (isCard || hasHeading)) {
