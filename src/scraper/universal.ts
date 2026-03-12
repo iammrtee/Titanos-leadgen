@@ -66,16 +66,14 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
         const cacheDir = process.env.PUPPETEER_CACHE_DIR || path.join(process.cwd(), 'dist', 'puppeteer_cache');
         console.log(`[Universal Scraper] Cache Dir: ${cacheDir}`);
         
-        // Manual resolution for Linux on Render:
-        // The binary is typically in <cache>/chrome/linux-<build>/chrome-linux64/chrome
-        let executablePath: string | undefined;
+        // Explicit binary resolution as requested
+        let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
         
-        if (process.env.RENDER) {
+        if (!executablePath && process.env.RENDER) {
             try {
                 const chromeDir = path.join(cacheDir, 'chrome');
                 if (fs.existsSync(chromeDir)) {
                     const versions = fs.readdirSync(chromeDir);
-                    // Filter to find the first valid chrome-linux64 directory
                     for (const ver of versions) {
                         const candidate = path.join(chromeDir, ver, 'chrome-linux64', 'chrome');
                         if (fs.existsSync(candidate)) {
@@ -86,23 +84,10 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
                     }
                 }
                 
+                // Final hardcoded fallback if everything else fails
                 if (!executablePath) {
-                    // Fallback to searching the entire cache dir if standard path fails
-                    const findChrome = (dir: string): string | null => {
-                        const entries = fs.readdirSync(dir, { withFileTypes: true });
-                        for (const entry of entries) {
-                            const full = path.join(dir, entry.name);
-                            if (entry.isDirectory()) {
-                                const res = findChrome(full);
-                                if (res) return res;
-                            } else if (entry.name === 'chrome' && full.includes('chrome-linux64')) {
-                                return full;
-                            }
-                        }
-                        return null;
-                    };
-                    executablePath = findChrome(cacheDir) || undefined;
-                    if (executablePath) console.log(`[Universal Scraper] Fallback resolved: ${executablePath}`);
+                   executablePath = '/opt/render/project/src/node_modules/chrome_bin/chrome/linux-146.0.7680.31/chrome-linux64/chrome';
+                   console.log(`[Universal Scraper] Using hardcoded fallback: ${executablePath}`);
                 }
             } catch (err: any) {
                 console.warn(`[Universal Scraper] Path resolution failed: ${err.message}`);

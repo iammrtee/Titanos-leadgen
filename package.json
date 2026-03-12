@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "check-browser": "npx puppeteer browsers list"
+    "check-browser": "npx puppeteer browsers list",
+    "postinstall": "npx puppeteer browsers install chrome"
   },
   "engines": {
     "node": ">=20.0.0"
