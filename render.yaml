@@ -1,14 +1,10 @@
 services:
   - type: web
     name: Titanos-leadgen
-    env: node
-    buildCommand: npm ci && npm run build && npx puppeteer browsers install chrome --path /opt/render/project/src/node_modules/chrome_bin
-    startCommand: npm start
+    env: docker
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PUPPETEER_CACHE_DIR
-        value: /opt/render/project/src/node_modules/chrome_bin
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: "true"
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/google-chrome-stable

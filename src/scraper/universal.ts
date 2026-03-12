@@ -66,41 +66,10 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
         const cacheDir = process.env.PUPPETEER_CACHE_DIR || path.join(process.cwd(), 'dist', 'puppeteer_cache');
         console.log(`[Universal Scraper] Cache Dir: ${cacheDir}`);
         
-        // Explicit binary resolution as requested
-        let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        // Explicit binary resolution for Docker/Render
+        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
         
-        if (!executablePath && process.env.RENDER) {
-            try {
-                const chromeDir = path.join(cacheDir, 'chrome');
-                if (fs.existsSync(chromeDir)) {
-                    const findInDir = (dir: string): string | null => {
-                        const entries = fs.readdirSync(dir, { withFileTypes: true });
-                        for (const entry of entries) {
-                            const full = path.join(dir, entry.name);
-                            if (entry.isDirectory()) {
-                                const res = findInDir(full);
-                                if (res) return res;
-                            } else if (entry.name === 'chrome' && full.includes('chrome-linux64')) {
-                                return full;
-                            }
-                        }
-                        return null;
-                    };
-                    executablePath = findInDir(chromeDir) || undefined;
-                    if (executablePath) console.log(`[Universal Scraper] Found binary via search: ${executablePath}`);
-                }
-                
-                // Final hardcoded fallback for current Puppeteer version
-                if (!executablePath) {
-                   executablePath = '/opt/render/project/src/node_modules/chrome_bin/chrome/linux-131.0.6778.204/chrome-linux64/chrome';
-                   console.log(`[Universal Scraper] Using versioned fallback: ${executablePath}`);
-                }
-            } catch (err: any) {
-                console.warn(`[Universal Scraper] Path resolution failed: ${err.message}`);
-            }
-        }
-
-        console.log(`[Universal Scraper] Attempting browser launch...`);
+        console.log(`[Universal Scraper] Attempting browser launch with: ${executablePath}`);
         browser = await puppeteer.launch({
             executablePath: executablePath,
             headless: true,
@@ -111,6 +80,7 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
                 '--disable-gpu'
             ]
         });
+        console.log(`[Universal Scraper] Browser launched successfully`);
         console.log(`[Universal Scraper] Browser launched successfully`);
     } catch (e: any) {
         throw new Error(`Browser launch failed: ${e.message}`);

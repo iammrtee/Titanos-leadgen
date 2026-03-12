@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+*.csv
+.cache
+puppeteer_cache
+chrome_bin
+.git
+.DS_Store
+Dockerfile
+render.yaml
