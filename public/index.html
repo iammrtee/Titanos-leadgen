@@ -162,8 +162,8 @@
         </a>
       </div>
     </div>
-    <div class="absolute bottom-4 right-4 text-[10px] text-gray-400 dark:text-slate-600 font-mono">
-      v2.2.0-stable
+    <div id="appVersion" class="absolute bottom-4 right-4 text-[10px] text-gray-400 dark:text-slate-600 font-mono">
+      Loading...
     </div>
 
     <div class="flex-1 overflow-y-auto p-10 bg-[#f8fafc]/50 dark:bg-[#0f172a]">
@@ -198,9 +198,19 @@
       document.getElementById('targetUrl').value = url;
     }
 
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/status?t=' + Date.now());
+        const data = await res.json();
+        document.getElementById('appVersion').innerText = data.version;
+      } catch (err) {
+        document.getElementById('appVersion').innerText = 'Offline';
+      }
+    }
+
     async function loadLeads() {
       try {
-        const res = await fetch('/api/leads');
+        const res = await fetch('/api/leads?t=' + Date.now());
         leads = await res.json();
         renderLeads();
       } catch (err) {
@@ -400,6 +410,7 @@
     // Initial load
     document.addEventListener('DOMContentLoaded', () => {
       initTheme();
+      loadStatus();
       loadLeads();
     });
   </script>
