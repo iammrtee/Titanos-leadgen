@@ -99,7 +99,7 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
     try {
         await page.goto(url, { waitUntil: 'networkidle0', timeout: 90000 });
         await new Promise(r => setTimeout(r, 8000)); // Increased wait for cloud browser
-    } catch (err) {
+    } catch (err: any) {
         console.warn(`[Universal Scraper] Navigation warning: ${err.message}`);
     }
 
