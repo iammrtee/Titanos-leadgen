@@ -67,7 +67,19 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
         console.log(`[Universal Scraper] Cache Dir: ${cacheDir}`);
         
         // Explicit binary resolution for Docker/Render
-        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
+        let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        
+        if (!executablePath && process.env.RENDER) {
+            const candidates = ['/usr/bin/google-chrome-stable', '/usr/bin/google-chrome', '/usr/bin/chrome'];
+            for (const c of candidates) {
+                if (fs.existsSync(c)) {
+                    executablePath = c;
+                    break;
+                }
+            }
+        }
+        
+        if (!executablePath) executablePath = '/usr/bin/google-chrome-stable';
         
         console.log(`[Universal Scraper] Attempting browser launch with: ${executablePath}`);
         browser = await puppeteer.launch({
