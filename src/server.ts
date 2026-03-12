@@ -39,7 +39,7 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.3.1-FINAL',
+        version: 'v2.3.2-STABLE',
         time: new Date().toISOString()
     });
 });
@@ -60,7 +60,7 @@ app.get('/api/build-log', (req, res) => {
 app.get('/api/debug-fs', (req, res) => {
     const projectRoot = process.cwd();
     const possiblePaths = [
-        { name: 'PUP_CACHE', path: path.join(projectRoot, 'dist', 'puppeteer_cache') },
+        { name: 'PUP_CACHE', path: path.join(projectRoot, 'puppeteer_cache') },
         { name: 'DIST', path: path.join(projectRoot, 'dist') },
         { name: 'ROOT', path: projectRoot }
     ];
