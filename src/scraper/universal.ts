@@ -73,21 +73,27 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
             try {
                 const chromeDir = path.join(cacheDir, 'chrome');
                 if (fs.existsSync(chromeDir)) {
-                    const versions = fs.readdirSync(chromeDir);
-                    for (const ver of versions) {
-                        const candidate = path.join(chromeDir, ver, 'chrome-linux64', 'chrome');
-                        if (fs.existsSync(candidate)) {
-                            executablePath = candidate;
-                            console.log(`[Universal Scraper] Resolved binary: ${executablePath}`);
-                            break;
+                    const findInDir = (dir: string): string | null => {
+                        const entries = fs.readdirSync(dir, { withFileTypes: true });
+                        for (const entry of entries) {
+                            const full = path.join(dir, entry.name);
+                            if (entry.isDirectory()) {
+                                const res = findInDir(full);
+                                if (res) return res;
+                            } else if (entry.name === 'chrome' && full.includes('chrome-linux64')) {
+                                return full;
+                            }
                         }
-                    }
+                        return null;
+                    };
+                    executablePath = findInDir(chromeDir) || undefined;
+                    if (executablePath) console.log(`[Universal Scraper] Found binary via search: ${executablePath}`);
                 }
                 
-                // Final hardcoded fallback if everything else fails
+                // Final hardcoded fallback for current Puppeteer version
                 if (!executablePath) {
-                   executablePath = '/opt/render/project/src/node_modules/chrome_bin/chrome/linux-146.0.7680.31/chrome-linux64/chrome';
-                   console.log(`[Universal Scraper] Using hardcoded fallback: ${executablePath}`);
+                   executablePath = '/opt/render/project/src/node_modules/chrome_bin/chrome/linux-131.0.6778.204/chrome-linux64/chrome';
+                   console.log(`[Universal Scraper] Using versioned fallback: ${executablePath}`);
                 }
             } catch (err: any) {
                 console.warn(`[Universal Scraper] Path resolution failed: ${err.message}`);
