@@ -39,7 +39,7 @@ app.get('/health', (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
-        version: 'v2.2.2-STABLE-PUP',
+        version: 'v2.3.0-FINAL',
         time: new Date().toISOString()
     });
 });

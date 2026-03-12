@@ -2,6 +2,8 @@ import puppeteer from 'puppeteer';
 import { Lead } from './microlaunch';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
 
 async function resolveWithAI(page: any, context: string, targetName: string): Promise<string | null> {
     if (!process.env.GEMINI_API_KEY) return null;
@@ -61,9 +63,31 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
     
     let browser;
     try {
-        console.log(`[Universal Scraper] Attempting browser launch...`);
+        const cacheDir = process.env.PUPPETEER_CACHE_DIR || path.join(process.cwd(), 'dist', 'puppeteer_cache');
+        console.log(`[Universal Scraper] Cache Dir: ${cacheDir}`);
         
+        // Manual resolution for Linux on Render:
+        // The binary is typically in <cache>/chrome/linux-<build>/chrome-linux64/chrome
+        let executablePath: string | undefined;
+        
+        if (process.env.RENDER) {
+            try {
+                const chromeDir = path.join(cacheDir, 'chrome');
+                if (fs.existsSync(chromeDir)) {
+                    const versions = fs.readdirSync(chromeDir);
+                    if (versions.length > 0) {
+                        executablePath = path.join(chromeDir, versions[0], 'chrome-linux64', 'chrome');
+                        console.log(`[Universal Scraper] Found binary at: ${executablePath}`);
+                    }
+                }
+            } catch (err: any) {
+                console.warn(`[Universal Scraper] Path resolution failed: ${err.message}`);
+            }
+        }
+
+        console.log(`[Universal Scraper] Attempting browser launch...`);
         browser = await puppeteer.launch({
+            executablePath: executablePath,
             headless: true,
             args: [
                 '--no-sandbox', 
