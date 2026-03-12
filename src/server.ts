@@ -45,11 +45,15 @@ app.get('/api/status', (req, res) => {
 });
 
 app.get('/api/build-log', (req, res) => {
-    const logPath = path.join(process.cwd(), 'build.log');
-    if (fs.existsSync(logPath)) {
-        res.type('text/plain').send(fs.readFileSync(logPath, 'utf8'));
+    const rootLog = path.join(process.cwd(), 'build.log');
+    const distLog = path.join(process.cwd(), 'dist', 'build.log');
+    
+    if (fs.existsSync(rootLog)) {
+        res.type('text/plain').send(fs.readFileSync(rootLog, 'utf8'));
+    } else if (fs.existsSync(distLog)) {
+        res.type('text/plain').send(fs.readFileSync(distLog, 'utf8'));
     } else {
-        res.status(404).send('Build log not found at ' + logPath);
+        res.status(404).send(`Build log not found at ${rootLog} or ${distLog}`);
     }
 });
 
