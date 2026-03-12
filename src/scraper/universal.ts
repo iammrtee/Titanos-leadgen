@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { Lead } from './microlaunch';
+import { Lead } from '../types';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import 'dotenv/config';
 import fs from 'fs';

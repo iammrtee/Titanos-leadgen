@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import puppeteer from 'puppeteer';
-import { Lead } from '../scraper/microlaunch';
+import { Lead } from '../types';
 
 export interface LeadAnalysis {
     Industry: string;

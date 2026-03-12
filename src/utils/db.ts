@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { Lead } from '../scraper/microlaunch';
+import { Lead } from '../types';
 
 const DB_PATH = path.join(process.cwd(), 'leads.db.json');
 
