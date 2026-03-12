@@ -14,7 +14,7 @@ ls -la
 
 echo "--- Build Step: Installing Puppeteer Chrome ---"
 # Use a local path that is definitely within the build context
-export PUPPETEER_CACHE_DIR=$(pwd)/puppeteer_cache
+export PUPPETEER_CACHE_DIR=$(pwd)/chrome_bin
 echo "Using PUPPETEER_CACHE_DIR: $PUPPETEER_CACHE_DIR"
 
 npx puppeteer browsers install chrome --path $PUPPETEER_CACHE_DIR

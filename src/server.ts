@@ -60,7 +60,7 @@ app.get('/api/build-log', (req, res) => {
 app.get('/api/debug-fs', (req, res) => {
     const projectRoot = process.cwd();
     const possiblePaths = [
-        { name: 'PUP_CACHE', path: path.join(projectRoot, 'puppeteer_cache') },
+        { name: 'PUP_CACHE', path: path.join(projectRoot, 'chrome_bin') },
         { name: 'DIST', path: path.join(projectRoot, 'dist') },
         { name: 'ROOT', path: projectRoot }
     ];

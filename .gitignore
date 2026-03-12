@@ -4,7 +4,6 @@ leads_*.csv
 leads.db.json
 .DS_Store
 .cache
-puppeteer_cache
 startup.log
 check-remote.js
 node_modules
