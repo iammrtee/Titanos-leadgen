@@ -61,11 +61,9 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
     
     let browser;
     try {
-        const executablePath = '/opt/render/project/src/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome';
-        console.log(`[Universal Scraper] Attempting browser launch. Searching cache...`);
+        console.log(`[Universal Scraper] Attempting browser launch...`);
         
         browser = await puppeteer.launch({
-            executablePath: process.env.RENDER ? undefined : undefined, // Let Puppeteer find it normally first
             headless: true,
             args: [
                 '--no-sandbox', 
@@ -74,7 +72,7 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
                 '--disable-gpu'
             ]
         });
-        console.log(`[Universal Scraper] Browser launched successfully: ${browser.process()?.pid}`);
+        console.log(`[Universal Scraper] Browser launched successfully`);
     } catch (e: any) {
         throw new Error(`Browser launch failed: ${e.message}`);
     }
