@@ -61,6 +61,7 @@ app.get('/api/debug-fs', (req, res) => {
     const projectRoot = process.cwd();
     const possiblePaths = [
         { name: 'PUP_CACHE', path: path.join(projectRoot, 'node_modules', 'chrome_bin') },
+        { name: 'PROJECT_ROOT', path: '/opt/render/project' },
         { name: 'DIST', path: path.join(projectRoot, 'dist') },
         { name: 'ROOT', path: projectRoot }
     ];
