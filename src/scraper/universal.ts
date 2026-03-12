@@ -75,10 +75,34 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
                 const chromeDir = path.join(cacheDir, 'chrome');
                 if (fs.existsSync(chromeDir)) {
                     const versions = fs.readdirSync(chromeDir);
-                    if (versions.length > 0) {
-                        executablePath = path.join(chromeDir, versions[0], 'chrome-linux64', 'chrome');
-                        console.log(`[Universal Scraper] Found binary at: ${executablePath}`);
+                    // Filter to find the first valid chrome-linux64 directory
+                    for (const ver of versions) {
+                        const candidate = path.join(chromeDir, ver, 'chrome-linux64', 'chrome');
+                        if (fs.existsSync(candidate)) {
+                            executablePath = candidate;
+                            console.log(`[Universal Scraper] Resolved binary: ${executablePath}`);
+                            break;
+                        }
                     }
+                }
+                
+                if (!executablePath) {
+                    // Fallback to searching the entire cache dir if standard path fails
+                    const findChrome = (dir: string): string | null => {
+                        const entries = fs.readdirSync(dir, { withFileTypes: true });
+                        for (const entry of entries) {
+                            const full = path.join(dir, entry.name);
+                            if (entry.isDirectory()) {
+                                const res = findChrome(full);
+                                if (res) return res;
+                            } else if (entry.name === 'chrome' && full.includes('chrome-linux64')) {
+                                return full;
+                            }
+                        }
+                        return null;
+                    };
+                    executablePath = findChrome(cacheDir) || undefined;
+                    if (executablePath) console.log(`[Universal Scraper] Fallback resolved: ${executablePath}`);
                 }
             } catch (err: any) {
                 console.warn(`[Universal Scraper] Path resolution failed: ${err.message}`);
