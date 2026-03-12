@@ -2,7 +2,7 @@ services:
   - type: web
     name: Titanos-leadgen
     env: node
-    buildCommand: npm ci && npm run build && npx puppeteer browsers install chrome --path /opt/render/project/src/puppeteer_cache
+    buildCommand: chmod +x render-build.sh && ./render-build.sh
     startCommand: npm start
     healthCheckPath: /health
     envVars:
