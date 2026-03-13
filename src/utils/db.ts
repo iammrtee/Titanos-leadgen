@@ -1,53 +1,68 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 import { Lead } from '../types';
+import 'dotenv/config';
 
-const DB_PATH = path.join(process.cwd(), 'leads.db.json');
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 
-export async function readLeads(): Promise<Lead[]> {
-    try {
-        const data = await fs.readFile(DB_PATH, 'utf-8');
-        return JSON.parse(data);
-    } catch {
-        return [];
-    }
+if (!supabaseUrl || !supabaseKey) {
+    console.warn(`[Supabase] Missing credentials. Falling back to ephemeral storage.`);
 }
 
-export async function saveLeads(leads: Lead[]): Promise<void> {
-    await fs.writeFile(DB_PATH, JSON.stringify(leads, null, 2));
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+export async function readLeads(): Promise<Lead[]> {
+    const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+    if (error) {
+        console.error('[Supabase] Read Error:', error.message);
+        return [];
+    }
+    return data as Lead[];
 }
 
 export async function addLeads(newLeads: Lead[]): Promise<number> {
-    const existingLeads = await readLeads();
-    const existingWebsites = new Set(existingLeads.map(l => l.website));
+    if (newLeads.length === 0) return 0;
 
-    let addedCount = 0;
-    const toAdd = [];
+    const { data, error } = await supabase
+        .from('leads')
+        .upsert(newLeads, { onConflict: 'website' })
+        .select();
 
-    for (const lead of newLeads) {
-        if (!existingWebsites.has(lead.website)) {
-            lead.createdAt = new Date().toISOString();
-            toAdd.push(lead);
-            addedCount++;
-        }
+    if (error) {
+        console.error('[Supabase] Write Error:', error.message);
+        return 0;
     }
 
-    await saveLeads([...existingLeads, ...toAdd]);
-    console.log(`[Database] Committed ${toAdd.length} new leads to storage.`);
+    const addedCount = data?.length || 0;
+    console.log(`[Database] Committed ${addedCount} leads to Supabase.`);
     return addedCount;
 }
 
 export async function updateLead(id: string, updates: Partial<Lead>): Promise<void> {
-    const leads = await readLeads();
-    const index = leads.findIndex(l => l.id === id);
-    if (index !== -1) {
-        leads[index] = { ...leads[index], ...updates };
-        await saveLeads(leads);
+    const { error } = await supabase
+        .from('leads')
+        .update(updates)
+        .eq('id', id);
+
+    if (error) {
+        console.error('[Supabase] Update Error:', error.message);
     }
 }
 
 export async function getTodaysLeadCount(): Promise<number> {
-    const leads = await readLeads();
     const today = new Date().toISOString().split('T')[0];
-    return leads.filter(l => l.createdAt && l.createdAt.startsWith(today)).length;
+    const { count, error } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .gte('createdAt', today);
+
+    if (error) {
+        console.error('[Supabase] Count Error:', error.message);
+        return 0;
+    }
+    return count || 0;
 }
