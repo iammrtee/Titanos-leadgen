@@ -8,8 +8,8 @@ import path from 'path';
 async function resolveWithAI(page: any, context: string, targetName: string): Promise<string | null> {
     if (!process.env.GEMINI_API_KEY) return null;
     
-    // Primary model that works in this environment
-    const modelName = 'gemini-2.5-flash';
+    // Corrected model name for stability
+    const modelName = 'gemini-1.5-flash';
     
     try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -179,7 +179,7 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
 
             if (confidence >= 60 && text.length > 1) {
                 let title = text;
-                const header = parentNode?.querySelector('h1, h2, h3, h4, r, strong, b, [class*="title"], [class*="name"]');
+                const header = parentNode?.querySelector('h1, h2, h3, h4, h5, h6, strong, b, [class*="title"], [class*="name"]');
                 if (header && header.textContent?.trim() && header.textContent.trim().length > 2) {
                     title = header.textContent.trim();
                 }
@@ -192,9 +192,10 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
                 });
             }
         }
-        console.log(`[DOM Discovery] Found ${results.length} total candidates`);
         return results.sort((a, b) => b.confidence - a.confidence);
     }, baseDomain);
+
+    console.log(`[DOM Discovery] Found ${potentialLinks.length} total candidates`);
 
     console.log(`[Universal Scraper] ${potentialLinks.length} candidates found. Starting extraction...`);
 
