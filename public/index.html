@@ -83,12 +83,70 @@
         .tier-mid { color: var(--indigo); border-color: rgba(99, 102, 241, 0.2); background: rgba(99, 102, 241, 0.05); }
         .tier-low { color: #94A3B8; border-color: rgba(148, 163, 184, 0.2); background: rgba(148, 163, 184, 0.05); }
 
-        /* Action Panel */
-        .action-panel {
+        /* Action Panel & Drawer */
+        .action-panel, .profile-drawer {
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             transform: translateX(100%);
         }
-        .action-panel.open { transform: translateX(0); }
+        .action-panel.open, .profile-drawer.open { transform: translateX(0); }
+
+        /* Dropdowns & Modals */
+        .dropdown-card {
+            background: #0F1320;
+            border: 1px solid var(--border-white);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+        }
+
+        /* Settings Toggle */
+        .toggle-switch {
+            width: 32px;
+            height: 18px;
+            background: #1F2937;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle-switch.active { background: var(--mint); }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+        .toggle-switch.active::after { transform: translateX(14px); }
+
+        /* Charts & Map Mockup */
+        .chart-bar { background: var(--indigo); border-radius: 2px 2px 0 0; }
+        .chart-bar.high { background: var(--mint); }
+        .chart-bar.mid { background: var(--indigo); }
+        .chart-bar.low { background: #4B5563; }
+
+        .map-marker {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px currentColor;
+            cursor: pointer;
+        }
+
+        /* Utils */
+        .hide { display: none !important; }
     </style>
     <script>
         tailwind.config = {
@@ -142,10 +200,16 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 <span class="text-sm font-medium">Analytics</span>
             </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-all">
+            <a href="javascript:void(0)" onclick="switchTab('map')" id="nav-map" class="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-all">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 <span class="text-sm font-medium">Global Map</span>
             </a>
+            <div class="pt-4 mt-4 micro-border-t">
+                <a href="javascript:void(0)" onclick="switchTab('settings')" id="nav-settings" class="flex items-center gap-3 px-3 py-2 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span class="text-sm font-medium">Settings</span>
+                </a>
+            </div>
         </nav>
 
         <!-- Config Panel -->
@@ -192,19 +256,22 @@
 
             <div class="flex items-center gap-6">
                 <div class="flex items-center micro-border bg-black/40 p-[3px] rounded-lg">
-                    <button class="px-4 py-1.5 rounded-md text-[11px] font-bold bg-white/5 text-white transition-all">LIST</button>
-                    <button class="px-4 py-1.5 rounded-md text-[11px] font-bold text-gray-500 hover:text-gray-300 transition-all">ANALYTICS</button>
-                    <button class="px-4 py-1.5 rounded-md text-[11px] font-bold text-gray-500 hover:text-gray-300 transition-all">MAP</button>
+                    <button onclick="switchTab('discovery')" id="tab-discovery" class="tab-btn px-4 py-1.5 rounded-md text-[11px] font-bold bg-white/5 text-white transition-all">LIST</button>
+                    <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn px-4 py-1.5 rounded-md text-[11px] font-bold text-gray-500 hover:text-gray-300 transition-all">ANALYTICS</button>
+                    <button onclick="switchTab('map')" id="tab-map" class="tab-btn px-4 py-1.5 rounded-md text-[11px] font-bold text-gray-500 hover:text-gray-300 transition-all">MAP</button>
                 </div>
-                <a href="/api/export" class="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white hover:bg-white/5 transition-all micro-border rounded-lg group">
+                <button onclick="showExportModal()" class="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white hover:bg-white/5 transition-all micro-border rounded-lg group">
                     <svg class="w-4 h-4 text-gray-400 group-hover:text-accent-indigo" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     EXPORT CSV
-                </a>
+                </button>
             </div>
         </header>
 
         <!-- Workspace -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <div class="flex-1 overflow-y-auto custom-scrollbar relative">
+            
+            <!-- Discovery View -->
+            <div id="view-discovery" class="tab-view">
             <!-- KPI Tiles -->
             <section class="grid grid-cols-4 gap-px bg-white/5 micro-border-b">
                 <div class="bg-dark-base p-8 space-y-2">
@@ -280,15 +347,201 @@
                             <th class="pb-4 w-12"></th>
                         </tr>
                     </thead>
-                    <tbody id="leadsList">
-                        <!-- Leads populated via JS -->
-                    </tbody>
                 </table>
             </div>
-        </div>
+            </div><!-- /view-discovery -->
 
-        <!-- Detail Side Panel -->
-        <div id="resultPanel" class="action-panel fixed inset-y-0 right-0 w-[480px] bg-dark-sidebar shadow-2xl z-[100] micro-border-l flex flex-col">
+            <!-- Analytics View -->
+            <div id="view-analytics" class="tab-view hide p-8 space-y-8">
+                <div class="grid grid-cols-3 gap-6">
+                    <div class="p-8 micro-border bg-black/40 rounded-2xl space-y-4">
+                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Total Pipeline Value</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="mono text-4xl font-bold text-white">$124.5k</span>
+                            <span class="text-[10px] text-accent-mint font-bold">+12%</span>
+                        </div>
+                    </div>
+                    <div class="p-8 micro-border bg-black/40 rounded-2xl space-y-4">
+                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Avg Time to Contact</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="mono text-4xl font-bold text-white">4.2h</span>
+                            <span class="text-[10px] text-accent-indigo font-bold">-0.8h</span>
+                        </div>
+                    </div>
+                    <div class="p-8 micro-border bg-black/40 rounded-2xl space-y-4">
+                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Response Rate</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="mono text-4xl font-bold text-white">18.4%</span>
+                            <span class="text-[10px] text-amber-500 font-bold">+2.1%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="p-8 micro-border bg-black/20 rounded-2xl space-y-6">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest">7-Day Discovery Velocity</h4>
+                        <div class="flex items-end justify-between h-48 pt-4 gap-2">
+                            <div class="flex flex-col flex-1 gap-1 items-center">
+                                <div class="w-full flex flex-col gap-0.5">
+                                    <div class="chart-bar high w-full" style="height: 40%"></div>
+                                    <div class="chart-bar mid w-full" style="height: 30%"></div>
+                                    <div class="chart-bar low w-full" style="height: 10%"></div>
+                                </div>
+                                <span class="mono text-[9px] text-gray-600 mt-2">03.06</span>
+                            </div>
+                            <!-- More bars would go here -->
+                            <div class="flex flex-col flex-1 gap-1 items-center">
+                                <div class="w-full flex flex-col gap-0.5">
+                                    <div class="chart-bar high w-full" style="height: 60%"></div>
+                                    <div class="chart-bar mid w-full" style="height: 20%"></div>
+                                    <div class="chart-bar low w-full" style="height: 10%"></div>
+                                </div>
+                                <span class="mono text-[9px] text-white mt-2">TODAY</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-8 micro-border bg-black/20 rounded-2xl flex flex-col items-center justify-center space-y-6">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest self-start">Tier Breakdown</h4>
+                        <div class="relative w-48 h-48">
+                            <svg viewBox="0 0 36 36" class="w-full h-full transform -rotate-90">
+                                <path class="text-gray-800" stroke-width="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="text-accent-mint" stroke-dasharray="45, 100" stroke-width="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="mono text-2xl font-bold text-white">45%</span>
+                                <span class="text-[9px] text-gray-600 uppercase font-bold">High Tier</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 pt-4">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Top Inbound Sources</h4>
+                    <div class="micro-border bg-black/20 rounded-2xl overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-white/5 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                <tr>
+                                    <th class="px-6 py-3">Domain</th>
+                                    <th class="px-6 py-3">Leads Found</th>
+                                    <th class="px-6 py-3">Avg Score</th>
+                                    <th class="px-6 py-3">Conv Est.</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-xs text-gray-300">
+                                <tr class="micro-border-b bg-white/[0.01]">
+                                    <td class="px-6 py-4 font-bold">microlaunch.net</td>
+                                    <td class="px-6 py-4 mono">124</td>
+                                    <td class="px-6 py-4 mono text-accent-mint">88.5</td>
+                                    <td class="px-6 py-4 mono">4.2%</td>
+                                </tr>
+                                <tr class="bg-white/[0.01]">
+                                    <td class="px-6 py-4 font-bold">producthunt.com</td>
+                                    <td class="px-6 py-4 mono">86</td>
+                                    <td class="px-6 py-4 mono text-accent-indigo">72.1</td>
+                                    <td class="px-6 py-4 mono">2.8%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div><!-- /view-analytics -->
+
+            <!-- Map View -->
+            <div id="view-map" class="tab-view hide h-full flex flex-col">
+                <div class="flex items-center justify-between px-8 py-4 micro-border-b bg-black/20">
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 rounded-full text-[10px] font-bold bg-white/10 text-white">ALL</button>
+                        <button class="px-3 py-1 rounded-full text-[10px] font-bold text-gray-500 hover:text-white transition-all">HIGH</button>
+                        <button class="px-3 py-1 rounded-full text-[10px] font-bold text-gray-500 hover:text-white transition-all">MID</button>
+                    </div>
+                    <div class="flex items-center gap-2 micro-border px-2 py-1 rounded-lg">
+                        <button class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-white font-bold">+</button>
+                        <div class="w-px h-3 bg-white/10"></div>
+                        <button class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-white font-bold">−</button>
+                    </div>
+                </div>
+                <div class="flex-1 relative bg-[#0C0F1A] overflow-hidden">
+                    <!-- World Map SVG Simplified Mockup -->
+                    <svg viewBox="0 0 800 450" class="w-full h-full opacity-40">
+                        <path fill="#141829" stroke="rgba(255,255,255,0.06)" d="M150,100 L250,100 L280,150 L200,200 L120,150 Z M400,150 L500,180 L480,250 L380,220 Z" />
+                        <!-- Mock Markers -->
+                        <circle cx="200" cy="150" r="3" fill="#5EEAD4" class="animate-pulse" />
+                        <circle cx="450" cy="200" r="3" fill="#6366F1" />
+                    </svg>
+                    
+                    <!-- Mini Profile Card for Map -->
+                    <div class="absolute top-8 right-8 w-64 p-6 dropdown-card fade-up">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-bold text-accent-indigo">L</div>
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-bold text-white">Linear Labs</span>
+                                    <span class="text-[9px] mono text-accent-mint uppercase font-bold">HIGH POTENTIAL</span>
+                                </div>
+                            </div>
+                            <button class="w-full bg-accent-mint py-2 text-[10px] font-bold text-dark-base rounded uppercase">Add to Pipeline</button>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /view-map -->
+
+            <!-- Settings View -->
+            <div id="view-settings" class="tab-view hide p-8 flex gap-8">
+                <aside class="w-48 space-y-1">
+                    <a href="#" class="block px-3 py-2 rounded-md bg-white/5 text-accent-mint text-[11px] font-bold uppercase tracking-wider">General</a>
+                    <a href="#" class="block px-3 py-2 rounded-md text-gray-500 hover:text-white transition-all text-[11px] font-bold uppercase tracking-wider">Discovery</a>
+                    <a href="#" class="block px-3 py-2 rounded-md text-gray-500 hover:text-white transition-all text-[11px] font-bold uppercase tracking-wider">Integrations</a>
+                    <a href="#" class="block px-3 py-2 rounded-md text-gray-500 hover:text-white transition-all text-[11px] font-bold uppercase tracking-wider">API Keys</a>
+                </aside>
+                <div class="flex-1 max-w-2xl space-y-8">
+                    <div class="space-y-6">
+                        <h4 class="text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] micro-border-b pb-2">Global Protocols</h4>
+                        <div class="grid gap-6">
+                            <div class="flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <span class="text-xs font-bold text-white">Default Lead Limit</span>
+                                    <p class="text-[10px] text-gray-500">The baseline volume for background discovery protocols.</p>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" min="5" max="100" value="50" class="w-32 accent-mint bg-white/5 rounded-full h-1">
+                                    <span class="mono text-[10px] text-accent-mint font-bold">50</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <span class="text-xs font-bold text-white">Discovery Scan Depth</span>
+                                    <p class="text-[10px] text-gray-500">Complexity level of the DOM bridging algorithm.</p>
+                                </div>
+                                <select class="bg-dark-sidebar micro-border rounded px-4 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-accent-mint w-48 uppercase tracking-widest">
+                                    <option>Shallow</option>
+                                    <option selected>Standard</option>
+                                    <option>Deep Deep</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <span class="text-xs font-bold text-white">Auto-export Discovery</span>
+                                    <p class="text-[10px] text-gray-500">Automatically trigger CSV export after every successful scan.</p>
+                                </div>
+                                <div class="toggle-switch active"></div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <span class="text-xs font-bold text-white">Precision Deduplication</span>
+                                    <p class="text-[10px] text-gray-500">Ensure no duplicate domains across multiple scan entries.</p>
+                                </div>
+                                <div class="toggle-switch active"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="bg-accent-mint px-6 py-2.5 rounded text-[10px] font-bold text-dark-base uppercase self-end">Save Protocols</button>
+                </div>
+            </div><!-- /view-settings -->
+
+        </div><!-- /Workspace Container -->
+
+        <!-- Detail Side Panel (Old Analyze - To be replaced by Drawer) -->
+        <div id="resultPanel" class="action-panel fixed inset-y-0 right-0 w-[480px] bg-dark-sidebar shadow-2xl z-[100] micro-border-l flex flex-col hide">
             <div class="h-16 flex items-center justify-between px-8 micro-border-b shrink-0 bg-black/20">
                 <div class="flex items-center gap-3">
                     <div class="w-2 h-2 rounded-full bg-accent-mint shadow-[0_0_8px_rgba(94,234,212,0.5)]"></div>
@@ -300,6 +553,41 @@
             </div>
             <div id="panelContent" class="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
                 <!-- Data injected by JS -->
+            </div>
+        </div>
+
+        <!-- NEW Profile Drawer -->
+        <div id="profileDrawer" class="profile-drawer fixed inset-y-0 right-0 w-[320px] bg-dark-sidebar shadow-2xl z-[110] micro-border-l flex flex-col">
+            <div class="h-16 flex items-center justify-between px-6 micro-border-b">
+                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Lead Profile</span>
+                <button onclick="closeProfile()" class="text-gray-500 hover:text-white transition-all">&times;</button>
+            </div>
+            <div id="drawerContent" class="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                <!-- Profile Data -->
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div id="exportModal" class="modal-overlay fixed inset-0 flex items-center justify-center hide">
+            <div class="w-[400px] p-8 dropdown-card space-y-6">
+                <div class="space-y-1">
+                    <h3 class="text-lg font-bold text-white">Export Lead Pool</h3>
+                    <p class="text-xs text-gray-500">Select protocol for data extraction.</p>
+                </div>
+                <div class="space-y-3">
+                    <label class="flex items-center gap-3 p-3 micro-border rounded-lg cursor-pointer hover:bg-white/5 transition-all">
+                        <input type="radio" name="export-type" checked class="accent-mint">
+                        <span class="text-xs font-bold text-white">All Discovered Leads</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 micro-border rounded-lg cursor-pointer hover:bg-white/5 transition-all">
+                        <input type="radio" name="export-type" class="accent-mint">
+                        <span class="text-xs font-bold text-white">High Potential Only</span>
+                    </label>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="hideExportModal()" class="flex-1 px-4 py-2 text-xs font-bold text-gray-500 micro-border rounded-lg hover:text-white transition-all">Cancel</button>
+                    <button onclick="triggerExport()" class="flex-1 px-4 py-2 text-xs font-bold text-dark-base bg-accent-mint rounded-lg shadow-lg shadow-mint/10">Export</button>
+                </div>
             </div>
         </div>
     </main>
@@ -314,6 +602,157 @@
                 c.classList.toggle('chip-active', parseInt(c.dataset.value) === val);
             });
         }
+
+        // --- NEW: UI Logic ---
+        function switchTab(tabId) {
+            // Update Tab Buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                const isActive = btn.id === `tab-${tabId}`;
+                btn.classList.toggle('bg-white/5', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('text-gray-500', !isActive);
+            });
+
+            // Update Nav Sidebar
+            document.querySelectorAll('nav a').forEach(a => {
+                const isActive = a.id === `nav-${tabId}`;
+                a.classList.toggle('bg-white/5', isActive);
+                a.classList.toggle('text-white', isActive);
+                a.classList.toggle('text-gray-400', !isActive);
+            });
+
+            // Update Views
+            document.querySelectorAll('.tab-view').forEach(view => {
+                view.classList.toggle('hide', view.id !== `view-${tabId}`);
+            });
+
+            // Special: Close profile drawer when switching
+            closeProfile();
+        }
+
+        function showExportModal() { document.getElementById('exportModal').classList.remove('hide'); }
+        function hideExportModal() { document.getElementById('exportModal').classList.add('hide'); }
+        function triggerExport() { 
+            window.location.href = '/api/export';
+            hideExportModal();
+        }
+
+        function toggleActionMenu(e, id) {
+            e.stopPropagation();
+            const existing = document.getElementById('lead-dropdown');
+            if (existing) existing.remove();
+
+            const menu = document.createElement('div');
+            menu.id = 'lead-dropdown';
+            menu.className = 'absolute right-0 top-10 w-40 dropdown-card p-1 space-y-1 fade-up';
+            menu.innerHTML = `
+                <button onclick="viewProfile('${id}')" class="w-full text-left px-3 py-2 text-[11px] hover:bg-white/5 rounded transition-all text-gray-300 hover:text-white">View Profile</button>
+                <button onclick="copyUrl('${id}')" class="w-full text-left px-3 py-2 text-[11px] hover:bg-white/5 rounded transition-all text-gray-300 hover:text-white">Copy URL</button>
+                <button onclick="markContacted('${id}')" class="w-full text-left px-3 py-2 text-[11px] hover:bg-white/5 rounded transition-all text-gray-300 hover:text-white">Mark Contacted</button>
+                <div class="h-px bg-white/5 mx-2"></div>
+                <button onclick="removeLead('${id}')" class="w-full text-left px-3 py-2 text-[11px] hover:bg-rose-500/10 rounded transition-all text-rose-500">Remove Lead</button>
+            `;
+            e.currentTarget.parentElement.appendChild(menu);
+            
+            // Close when clicking outside
+            document.addEventListener('click', () => menu.remove(), { once: true });
+        }
+
+        function copyUrl(id) {
+            const l = leads.find(x => x.id === id);
+            navigator.clipboard.writeText(l.website);
+        }
+
+        function markContacted(id) {
+            const row = document.querySelector(`[data-id="${id}"]`);
+            if (row) {
+                const nameCell = row.querySelector('.company-name-cell');
+                if (!nameCell.querySelector('.check-badge')) {
+                    nameCell.innerHTML += `<span class="check-badge ml-2 text-accent-mint">✓</span>`;
+                }
+            }
+        }
+
+        function removeLead(id) {
+            const row = document.querySelector(`[data-id="${id}"]`);
+            if (row) {
+                row.classList.add('opacity-0', 'translate-x-4');
+                setTimeout(() => {
+                    leads = leads.filter(l => l.id !== id);
+                    row.remove();
+                    updateStats();
+                }, 300);
+            }
+        }
+
+        function viewProfile(id) {
+            const lead = leads.find(l => l.id === id);
+            const drawer = document.getElementById('profileDrawer');
+            const content = document.getElementById('drawerContent');
+            const tier = lead.LeadScore === 'High Potential' ? 'high' : (lead.LeadScore === 'Low Potential' ? 'low' : 'mid');
+            const score = lead.score || (tier === 'high' ? 85 + Math.floor(Math.random()*10) : (tier === 'mid' ? 60 + Math.floor(Math.random()*15) : 30 + Math.floor(Math.random()*20)));
+
+            content.innerHTML = `
+                <div class="flex flex-col items-center text-center space-y-4 pt-4 fade-up">
+                    <div class="w-20 h-20 rounded-full flex items-center justify-center border-2 border-white/5 text-2xl font-bold ${getAvatarColor(lead.companyName)} shadow-xl">
+                        ${lead.companyName.charAt(0)}
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="text-lg font-bold text-white">${lead.companyName}</h4>
+                        <p class="mono text-[10px] text-gray-500 uppercase tracking-widest">${lead.website}</p>
+                    </div>
+                    <span class="tier-${tier} px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border">
+                        ${lead.LeadScore || 'NEURAL_EVAL'}
+                    </span>
+                </div>
+
+                <div class="flex justify-center pt-4">
+                    <div class="relative w-24 h-24">
+                        <svg viewBox="0 0 36 36" class="w-full h-full transform -rotate-90">
+                            <path class="text-gray-800" stroke-width="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="${getScoreText(tier)}" stroke-dasharray="${score}, 100" stroke-width="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="mono text-xl font-bold text-white">${score}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-4">
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="p-4 micro-border bg-black/20 rounded-xl space-y-1">
+                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Source Domain</span>
+                            <p class="text-xs font-bold text-gray-300">microlaunch.net</p>
+                        </div>
+                        <div class="p-4 micro-border bg-black/20 rounded-xl space-y-1">
+                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Discovered Date</span>
+                            <p class="text-xs font-bold text-gray-300">${new Date().toLocaleDateString()}</p>
+                        </div>
+                        <div class="p-4 micro-border bg-black/20 rounded-xl space-y-1">
+                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Industry Segment</span>
+                            <p class="text-xs font-bold text-gray-300">Enterprise SaaS</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3 pt-4 pb-8">
+                    <button class="w-full bg-accent-indigo py-3 rounded-lg text-[10px] font-bold text-white uppercase shadow-lg shadow-indigo/10 transition-all active:scale-95">Add to CRM</button>
+                    <button class="w-full bg-accent-mint py-3 rounded-lg text-[10px] font-bold text-dark-base uppercase shadow-lg shadow-mint/10 transition-all active:scale-95">Send Outreach</button>
+                </div>
+            `;
+            drawer.classList.add('open');
+        }
+
+        function closeProfile() {
+            document.getElementById('profileDrawer').classList.remove('open');
+        }
+
+        // Settings Toggles
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('toggle-switch')) {
+                e.target.classList.toggle('active');
+            }
+        });
 
         async function loadStatus() {
             try {
@@ -355,14 +794,14 @@
                 const score = l.score || (tier === 'high' ? 85 + Math.floor(Math.random()*10) : (tier === 'mid' ? 60 + Math.floor(Math.random()*15) : 30 + Math.floor(Math.random()*20)));
                 
                 return `
-                    <tr class="fade-up group hover:bg-white/[0.02] transition-all" style="animation-delay: ${idx * 0.05}s">
+                    <tr data-id="${l.id}" class="fade-up group hover:bg-white/[0.02] transition-all" style="animation-delay: ${idx * 0.05}s">
                         <td class="py-4 pl-4 mono text-[10px] text-gray-600">#${(idx + 1).toString().padStart(2, '0')}</td>
                         <td class="py-4">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full flex items-center justify-center border border-white/5 text-[10px] font-bold ${getAvatarColor(l.companyName)}">
                                     ${l.companyName.charAt(0)}
                                 </div>
-                                <div class="flex flex-col">
+                                <div class="flex flex-col company-name-cell">
                                     <span class="text-xs font-bold text-white">${l.companyName}</span>
                                     <span class="text-[10px] mono text-gray-500 truncate max-w-[180px]">${l.website}</span>
                                 </div>
@@ -381,8 +820,8 @@
                                 <span class="mono text-[10px] font-bold ${getScoreText(tier)}">${score}</span>
                             </div>
                         </td>
-                        <td class="py-4 text-right pr-4">
-                            <button onclick="${l.status === 'analyzed' ? `viewAnalysis('${l.id}')` : `analyzeLead('${l.id}')`}" 
+                        <td class="py-4 text-right pr-4 relative">
+                            <button onclick="toggleActionMenu(event, '${l.id}')"
                                 class="p-2 text-gray-600 hover:text-white transition-all">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
                             </button>
