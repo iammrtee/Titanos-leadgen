@@ -1,9 +1,12 @@
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Lead } from '../types';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
+
+puppeteer.use(StealthPlugin());
 
 async function resolveWithAI(page: any, context: string, targetName: string): Promise<string | null> {
     if (!process.env.GEMINI_API_KEY) return null;
@@ -98,14 +101,6 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
 
     const page = await browser.newPage();
     
-    // MANUAL STEALTH
-    await page.setExtraHTTPHeaders({
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-    });
-
     // EXPOSE BROWSER LOGS TO SERVER
     page.on('console', msg => {
         const text = msg.text();
