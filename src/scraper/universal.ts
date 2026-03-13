@@ -59,6 +59,11 @@ async function resolveWithAI(page: any, context: string, targetName: string): Pr
 }
 
 export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
+    // Fallsback to specialized landing pages if blocked
+    if (url === 'https://microlaunch.net' || url === 'microlaunch.net') {
+        url = 'https://microlaunch.net/launches';
+        console.log(`[Universal Scraper] Redirecting to high-link density path: ${url}`);
+    }
     console.log(`[Universal Scraper] Initiating protocol for: ${url}`);
     
     let browser;
@@ -93,6 +98,14 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
 
     const page = await browser.newPage();
     
+    // MANUAL STEALTH
+    await page.setExtraHTTPHeaders({
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+    });
+
     // EXPOSE BROWSER LOGS TO SERVER
     page.on('console', msg => {
         const text = msg.text();
@@ -107,8 +120,10 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
     console.log(`[Universal Scraper] Navigating to source...`);
     try {
         // More aggressive navigation for background scraping
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-        await new Promise(r => setTimeout(r, 4000)); 
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+        // HEAVY WAIT FOR CLOUDFLARE
+        console.log(`[Universal Scraper] Waiting for security clearing...`);
+        await new Promise(r => setTimeout(r, 12000)); 
     } catch (err: any) {
         console.warn(`[Universal Scraper] Navigation warning: ${err.message}`);
     }
