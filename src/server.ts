@@ -105,6 +105,35 @@ app.get('/api/debug-fs', (req, res) => {
     }
 });
 
+app.get('/api/debug-dom', async (req, res) => {
+    const { url } = req.query;
+    if (!url) return res.status(400).send('URL required');
+    
+    let browser;
+    try {
+        const puppeteer = require('puppeteer');
+        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
+        const browserlessUrl = process.env.BROWSERLESS_URL;
+        
+        if (browserlessUrl) {
+            browser = await puppeteer.connect({ browserWSEndpoint: browserlessUrl });
+        } else {
+            browser = await puppeteer.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
+        }
+        
+        const page = await browser.newPage();
+        await page.goto(url as string, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        const html = await page.evaluate(() => {
+            return document.body.innerHTML.slice(0, 5000) + '...';
+        });
+        await browser.close();
+        res.send(`<pre>${html.replace(/</g, '&lt;')}</pre>`);
+    } catch (e: any) {
+        if (browser) await (browser as any).close();
+        res.status(500).send(e.message);
+    }
+});
+
 app.use(express.static('public'));
 
 // Endpoint to trigger scraping (Discovery)
