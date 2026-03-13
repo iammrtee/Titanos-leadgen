@@ -92,6 +92,15 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
     }
 
     const page = await browser.newPage();
+    
+    // EXPOSE BROWSER LOGS TO SERVER
+    page.on('console', msg => {
+        const text = msg.text();
+        if (text.includes('[DOM Discovery]') || text.includes('[Extraction]')) {
+            console.log(`[BROWSER] ${text}`);
+        }
+    });
+
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1920, height: 1080 });
 
@@ -195,7 +204,10 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
         return results.sort((a, b) => b.confidence - a.confidence);
     }, baseDomain);
 
-    console.log(`[DOM Discovery] Found ${potentialLinks.length} total candidates`);
+    console.log(`[Universal Scraper] Discovery Results: Found ${potentialLinks.length} total candidates at ${url}`);
+    if (potentialLinks.length > 0) {
+        console.log(`[Universal Scraper] Top Candidate: ${potentialLinks[0].title} (${potentialLinks[0].url})`);
+    }
 
     console.log(`[Universal Scraper] ${potentialLinks.length} candidates found. Starting extraction...`);
 

@@ -33,6 +33,7 @@ export async function addLeads(newLeads: Lead[]): Promise<number> {
     }
 
     await saveLeads([...existingLeads, ...toAdd]);
+    console.log(`[Database] Committed ${toAdd.length} new leads to storage.`);
     return addedCount;
 }
 
