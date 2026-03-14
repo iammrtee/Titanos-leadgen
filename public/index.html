@@ -223,10 +223,11 @@
                 <div class="space-y-2">
                     <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block">Depth Limit</label>
                     <div class="grid grid-cols-4 gap-1" id="limitChips">
-                        <button onclick="setLimit(5)" class="limit-chip micro-border rounded py-1 text-[10px] mono text-gray-500 hover:text-white transition-all chip-active" data-value="5">05</button>
-                        <button onclick="setLimit(10)" class="limit-chip micro-border rounded py-1 text-[10px] mono text-gray-500 hover:text-white transition-all" data-value="10">10</button>
+                        <button onclick="setLimit(5)" class="limit-chip micro-border rounded py-1 text-[10px] mono text-gray-500 hover:text-white transition-all" data-value="5">05</button>
+                        <button onclick="setLimit(10)" class="limit-chip micro-border rounded py-1 text-[10px] mono text-gray-500 hover:text-white transition-all chip-active" data-value="10">10</button>
                         <button onclick="setLimit(25)" class="limit-chip micro-border rounded py-1 text-[10px] mono text-gray-500 hover:text-white transition-all" data-value="25">25</button>
                         <button onclick="setLimit(50)" class="limit-chip micro-border rounded py-1 text-[10px] mono text-gray-500 hover:text-white transition-all" data-value="50">50</button>
+                        <button onclick="setLimit(100)" class="limit-chip micro-border rounded py-1 text-[10px] mono text-gray-500 hover:text-white transition-all" data-value="100">100</button>
                     </div>
                 </div>
                 <button onclick="generateLeads()" id="generateBtn"
@@ -260,9 +261,9 @@
                     <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn px-4 py-1.5 rounded-md text-[11px] font-bold text-gray-500 hover:text-gray-300 transition-all">ANALYTICS</button>
                     <button onclick="switchTab('map')" id="tab-map" class="tab-btn px-4 py-1.5 rounded-md text-[11px] font-bold text-gray-500 hover:text-gray-300 transition-all">MAP</button>
                 </div>
-                <button onclick="showExportModal()" class="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white hover:bg-white/5 transition-all micro-border rounded-lg group">
+                <button onclick="triggerExport()" class="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white hover:bg-white/5 transition-all micro-border rounded-lg group">
                     <svg class="w-4 h-4 text-gray-400 group-hover:text-accent-indigo" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    EXPORT CSV
+                    EXPORT REPORT
                 </button>
             </div>
         </header>
@@ -347,6 +348,7 @@
                             <th class="pb-4 w-12"></th>
                         </tr>
                     </thead>
+                    <tbody id="leadsList"></tbody>
                 </table>
             </div>
             </div><!-- /view-discovery -->
@@ -449,11 +451,13 @@
             <!-- Map View -->
             <div id="view-map" class="tab-view hide h-full flex flex-col">
                 <div class="flex items-center justify-between px-8 py-4 micro-border-b bg-black/20">
-                    <div class="flex gap-2">
-                        <button class="px-3 py-1 rounded-full text-[10px] font-bold bg-white/10 text-white">ALL</button>
-                        <button class="px-3 py-1 rounded-full text-[10px] font-bold text-gray-500 hover:text-white transition-all">HIGH</button>
-                        <button class="px-3 py-1 rounded-full text-[10px] font-bold text-gray-500 hover:text-white transition-all">MID</button>
-                    </div>
+                  <div class="flex gap-2">
+                    <button class="depth-btn px-3 py-1 bg-gray-800 rounded text-[10px] mono border border-white/5 hover:bg-white/10" data-depth="5">05</button>
+                    <button class="depth-btn px-3 py-1 bg-gray-800 rounded text-[10px] mono border border-white/5 hover:bg-white/10" data-depth="10">10</button>
+                    <button class="depth-btn px-3 py-1 bg-gray-800 rounded text-[10px] mono border border-accent-indigo/40 text-accent-indigo" data-depth="25">25</button>
+                    <button class="depth-btn px-3 py-1 bg-gray-800 rounded text-[10px] mono border border-white/5 hover:bg-white/10" data-depth="50">50</button>
+                    <button class="depth-btn px-3 py-1 bg-gray-800 rounded text-[10px] mono border border-white/5 hover:bg-white/10" data-depth="100">100</button>
+                </div>
                     <div class="flex items-center gap-2 micro-border px-2 py-1 rounded-lg">
                         <button class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-white font-bold">+</button>
                         <div class="w-px h-3 bg-white/10"></div>
@@ -475,8 +479,21 @@
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-bold text-accent-indigo">L</div>
                                 <div class="flex flex-col">
-                                    <span class="text-xs font-bold text-white">Linear Labs</span>
-                                    <span class="text-[9px] mono text-accent-mint uppercase font-bold">HIGH POTENTIAL</span>
+                                    <div class="flex items-center gap-2">
+                                        ${lead.contactEmail ? `
+                                            <span class="text-white">${lead.contactEmail}</span>
+                                            ${lead.emailStatus === 'predicted' ? '<span class="px-1.5 py-0.5 rounded-full text-[8px] bg-purple-500/20 text-purple-400 border border-purple-500/30">AI_PREDICTED</span>' : ''}
+                                            ${lead.emailStatus === 'form-only' ? '<span class="px-1.5 py-0.5 rounded-full text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30">FORM_ONLY</span>' : ''}
+                                            ${lead.emailStatus === 'extracted' ? '<span class="px-1.5 py-0.5 rounded-full text-[8px] bg-green-500/20 text-green-400 border border-green-500/30">VERIFIED</span>' : ''}
+                                        ` : '<span class="text-gray-600">No Email Found</span>'}
+                                        
+                                        ${lead.linkedin ? `
+                                            <a href="${lead.linkedin}" target="_blank" class="hover:opacity-80 transition-opacity">
+                                                <svg class="w-3 h-3 text-[#0A66C2]" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                                            </a>
+                                        ` : ''}
+                                    </div>
+    <span class="text-[9px] mono text-accent-mint uppercase font-bold">HIGH POTENTIAL</span>
                                 </div>
                             </div>
                             <button class="w-full bg-accent-mint py-2 text-[10px] font-bold text-dark-base rounded uppercase">Add to Pipeline</button>
@@ -594,7 +611,7 @@
 
     <script>
         let leads = [];
-        let leadLimit = 5;
+        let leadLimit = 10;
 
         function setLimit(val) {
             leadLimit = val;
@@ -633,8 +650,7 @@
         function showExportModal() { document.getElementById('exportModal').classList.remove('hide'); }
         function hideExportModal() { document.getElementById('exportModal').classList.add('hide'); }
         function triggerExport() { 
-            window.location.href = '/api/export';
-            hideExportModal();
+            window.location.href = '/api/export-doc';
         }
 
         function toggleActionMenu(e, id) {
@@ -689,8 +705,8 @@
             const lead = leads.find(l => l.id === id);
             const drawer = document.getElementById('profileDrawer');
             const content = document.getElementById('drawerContent');
-            const tier = lead.LeadScore === 'High Potential' ? 'high' : (lead.LeadScore === 'Low Potential' ? 'low' : 'mid');
-            const score = lead.score || (tier === 'high' ? 85 + Math.floor(Math.random()*10) : (tier === 'mid' ? 60 + Math.floor(Math.random()*15) : 30 + Math.floor(Math.random()*20)));
+            const tier = (lead.tier || (lead.LeadScore === 'High Potential' ? 'High' : (lead.LeadScore === 'Low Potential' ? 'Low' : 'Mid'))).toLowerCase();
+            const score = lead.score || 0;
 
             content.innerHTML = `
                 <div class="flex flex-col items-center text-center space-y-4 pt-4 fade-up">
@@ -701,9 +717,12 @@
                         <h4 class="text-lg font-bold text-white">${lead.companyName}</h4>
                         <p class="mono text-[10px] text-gray-500 uppercase tracking-widest">${lead.website}</p>
                     </div>
-                    <span class="tier-${tier} px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border">
-                        ${lead.LeadScore || 'NEURAL_EVAL'}
-                    </span>
+                    <div class="flex flex-col items-center gap-2">
+                        <span class="tier-${tier} px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border">
+                            ${lead.tier || lead.LeadScore || 'EVALUATING'}
+                        </span>
+                        <span class="text-[10px] text-gray-400 font-medium uppercase tracking-widest">${lead.industry || lead.Industry || 'SaaS / Startup'}</span>
+                    </div>
                 </div>
 
                 <div class="flex justify-center pt-4">
@@ -714,23 +733,50 @@
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
                             <span class="mono text-xl font-bold text-white">${score}</span>
+                            <span class="text-[8px] text-gray-500 font-bold uppercase">Points</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="space-y-4 pt-4">
-                    <div class="grid grid-cols-1 gap-3">
-                        <div class="p-4 micro-border bg-black/20 rounded-xl space-y-1">
-                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Source Domain</span>
-                            <p class="text-xs font-bold text-gray-300">microlaunch.net</p>
+                    <div class="p-4 micro-border bg-black/20 rounded-xl">
+                        <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Company Overview</span>
+                        <h2 class="text-xl font-bold text-white mt-1 mb-2">${lead.companyName}</h2>
+                        <p class="text-xs text-gray-400 leading-relaxed">${lead.description || 'No description available.'}</p>
+                        <div class="flex gap-2 mt-4">
+                            <span class="bg-indigo-500/10 text-indigo-400 text-[10px] px-2 py-1 rounded-md border border-indigo-500/20">${lead.industry || 'Tech'}</span>
                         </div>
-                        <div class="p-4 micro-border bg-black/20 rounded-xl space-y-1">
-                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Discovered Date</span>
-                            <p class="text-xs font-bold text-gray-300">${new Date().toLocaleDateString()}</p>
+                    </div>
+                        <div class="p-4 micro-border bg-black/20 rounded-xl space-y-2">
+                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Buying Intent Signals</span>
+                            <div class="flex flex-wrap gap-2">
+                                ${lead.hasPricing ? '<span class="text-[9px] px-2 py-0.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded">Pricing Exists</span>' : ''}
+                                ${lead.hasBlog ? '<span class="text-[9px] px-2 py-0.5 bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 rounded">Content Active</span>' : ''}
+                                ${lead.hasSocialProof ? '<span class="text-[9px] px-2 py-0.5 bg-accent-mint/10 text-accent-mint border border-accent-mint/20 rounded">Social Proof</span>' : ''}
+                                ${lead.techStack && lead.techStack.length ? lead.techStack.map(t => `<span class="text-[9px] px-2 py-0.5 bg-white/5 text-gray-300 border border-white/10 rounded">${t}</span>`).join('') : ''}
+                            </div>
                         </div>
+
+                        <div class="p-4 micro-border bg-black/20 rounded-xl space-y-2">
+                             <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Social Presence</span>
+                             <div class="flex gap-4">
+                                ${lead.linkedin ? `<a href="${lead.linkedin}" target="_blank" class="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="2 2 20 20"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a2.48 2.48 0 0 0-2.48-2.48c-1.12 0-2.26.63-2.26 2.26v5.52h-2.87v-9.15h2.87v1.2a3.74 3.74 0 0 1 3.55-1.5c2.47 0 3.19 1.63 3.19 3.75v5.7h-2.8zM6.25 18.57h2.87V9.43H6.25v9.14zM7.68 8.07a1.68 1.68 0 1 1 1.68-1.68 1.68 1.68 0 0 1-1.68 1.68z"/></svg>
+                                </a>` : ''}
+                                ${lead.twitter ? `<a href="${lead.twitter}" target="_blank" class="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57c-.885-.392-1.83-.656-2.825-.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.599 3.419-2.043 1.602-4.624 2.416-7.398 2.378 2.203 1.412 4.814 2.236 7.625 2.236 9.227 0 14.471-7.778 14.156-14.776.974-.704 1.815-1.583 2.484-2.589z"/></svg>
+                                </a>` : ''}
+                                ${!lead.linkedin && !lead.twitter ? '<span class="text-[10px] text-gray-600 italic">No social profiles detected</span>' : ''}
+                             </div>
+                        </div>
+
                         <div class="p-4 micro-border bg-black/20 rounded-xl space-y-1">
-                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Industry Segment</span>
-                            <p class="text-xs font-bold text-gray-300">Enterprise SaaS</p>
+                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Contact Access</span>
+                            <div class="space-y-2 pt-1 border-t border-white/5 mt-2">
+                                ${lead.contactEmail ? `<p class="text-[11px] text-gray-300 flex items-center gap-2 font-medium"><svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg> ${lead.contactEmail}</p>` : ''}
+                                ${lead.contactPage ? `<a href="${lead.contactPage}" target="_blank" class="text-[11px] text-accent-indigo hover:underline flex items-center gap-2 font-medium"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg> Contact Page</a>` : ''}
+                                ${!lead.contactEmail && !lead.contactPage ? '<span class="text-[10px] text-gray-600 italic">No direct contact found</span>' : ''}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -766,17 +812,22 @@
 
         async function loadLeads() {
             try {
+                console.log('[Dashboard] Synchronizing leads pool...');
                 const res = await fetch('/api/leads?t=' + Date.now());
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 leads = await res.json();
+                console.log(`[Dashboard] Ingested ${leads.length} leads. Starting render...`);
                 renderLeads();
                 updateStats();
             } catch (err) {
-                console.error('[Error] Failed to fetch leads pool', err);
+                console.error('[CRITICAL] Failed to fetch leads pool:', err);
+                const list = document.getElementById('leadsList');
+                if (list) list.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-gray-500 mono text-xs uppercase tracking-widest">Protocol Sync Failed: ${err.message}</td></tr>`;
             }
         }
 
         function updateStats() {
-            const highPotential = leads.filter(l => l.LeadScore === 'High Potential').length;
+            const highPotential = leads.filter(l => l.tier === 'High' || l.LeadScore === 'High Potential').length;
             document.getElementById('totalCount').innerText = leads.length;
             document.getElementById('sidebarCount').innerText = leads.length;
             document.getElementById('highCount').innerText = highPotential;
@@ -784,50 +835,77 @@
             // Auto-calculate dummy analytics based on data
             const avg = leads.length ? (leads.reduce((a, b) => a + (b.score || 0), 0) / leads.length).toFixed(1) : '0.0';
             document.getElementById('avgScore').innerText = avg;
-            document.getElementById('convEst').innerText = leads.length ? (highPotential / leads.length * 10).toFixed(1) + '%' : '0%';
+            document.getElementById('convEst').innerText = leads.length ? (highPotential / leads.length * 100).toFixed(1) + '%' : '0%';
         }
 
         function renderLeads() {
             const list = document.getElementById('leadsList');
+            if (!leads || !Array.isArray(leads)) {
+                list.innerHTML = `<tr><td colspan="5" class="py-20 text-center"><span class="text-[10px] mono text-red-500/50">PROTOCOL SYNC FAILED: DATABASE_OFFLINE_OR_NETWORK_ERROR</span></td></tr>`;
+                console.error('Fetch Error:', e);
+                return;
+            }
+
             list.innerHTML = leads.map((l, idx) => {
-                const tier = l.LeadScore === 'High Potential' ? 'high' : (l.LeadScore === 'Low Potential' ? 'low' : 'mid');
-                const score = l.score || (tier === 'high' ? 85 + Math.floor(Math.random()*10) : (tier === 'mid' ? 60 + Math.floor(Math.random()*15) : 30 + Math.floor(Math.random()*20)));
-                
-                return `
-                    <tr data-id="${l.id}" class="fade-up group hover:bg-white/[0.02] transition-all" style="animation-delay: ${idx * 0.05}s">
-                        <td class="py-4 pl-4 mono text-[10px] text-gray-600">#${(idx + 1).toString().padStart(2, '0')}</td>
-                        <td class="py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center border border-white/5 text-[10px] font-bold ${getAvatarColor(l.companyName)}">
-                                    ${l.companyName.charAt(0)}
+                try {
+                    const rawName = l.companyName || 'Unknown Startup';
+                    const companyName = rawName.replace(/\n/g, ' ').trim();
+                    const website = l.website || 'No URL Found';
+                    const tier = (l.tier || (l.LeadScore === 'High Potential' ? 'High' : (l.LeadScore === 'Low Potential' ? 'Low' : 'Mid'))).toLowerCase();
+                    const score = l.score || 0;
+                    const label = l.tier || l.LeadScore || 'EVALUATING';
+                    
+                    return `
+                        <tr data-id="${l.id}" class="fade-up group hover:bg-white/[0.02] transition-all" style="animation-delay: ${idx * 0.05}s">
+                            <td class="py-4 pl-4 mono text-[10px] text-gray-600">#${(idx + 1).toString().padStart(2, '0')}</td>
+                            <td class="py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center border border-white/5 text-[10px] font-bold ${getAvatarColor(companyName)}">
+                                        ${companyName.charAt(0)}
+                                    </div>
+                                    <div class="flex flex-col company-name-cell">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-bold text-white">${companyName}</span>
+                                            ${l.emailStatus === 'predicted' ? `<span class="text-[8px] px-1.5 py-0.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-sm font-bold mono">AI_PREDICTED</span>` : ''}
+                                            ${l.emailStatus === 'form-only' ? `<span class="text-[8px] px-1.5 py-0.5 bg-gray-500/10 text-gray-400 border border-gray-500/20 rounded-sm font-bold mono">FORM_ONLY</span>` : ''}
+                                            ${l.emailStatus === 'extracted' ? `<span class="text-[8px] px-1.5 py-0.5 bg-accent-indigo/10 text-accent-indigo border border-accent-indigo/20 rounded-sm font-bold mono">VERIFIED</span>` : ''}
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            <span class="text-[10px] mono text-gray-500 truncate max-w-[120px]">${website}</span>
+                                            ${l.contactEmail ? `<span class="text-[9px] mono ${l.emailStatus === 'predicted' ? 'text-amber-500/60' : 'text-accent-indigo/60'} truncate max-w-[140px]">${l.contactEmail}</span>` : ''}
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            ${l.linkedin ? `<a href="${l.linkedin}" target="_blank" class="text-blue-400 hover:text-blue-300 transition-all"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>` : ''}
+                                            ${l.twitter ? `<a href="${l.twitter}" target="_blank" class="text-gray-500 hover:text-white transition-all"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57c-.885-.392-1.83-.656-2.825-.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.599 3.419-2.043 1.602-4.624 2.416-7.398 2.378 2.203 1.412 4.814 2.236 7.625 2.236 9.227 0 14.471-7.778 14.156-14.776.974-.704 1.815-1.583 2.484-2.589z"/></svg></a>` : ''}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="flex flex-col company-name-cell">
-                                    <span class="text-xs font-bold text-white">${l.companyName}</span>
-                                    <span class="text-[10px] mono text-gray-500 truncate max-w-[180px]">${l.website}</span>
+                            </td>
+                            <td class="py-4">
+                                <span class="tier-${tier} px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border">
+                                    ${label}
+                                </span>
+                            </td>
+                            <td class="py-4">
+                                <div class="flex items-center gap-3 w-32">
+                                    <div class="flex-1 bg-white/5 h-1 rounded-full overflow-hidden">
+                                        <div class="score-fill h-full ${getScoreColor(tier)}" style="width: 0%" data-score="${score}"></div>
+                                    </div>
+                                    <span class="mono text-[10px] font-bold ${getScoreText(tier)}">${score}</span>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="py-4">
-                            <span class="tier-${tier} px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border">
-                                ${l.LeadScore || 'NEURAL_EVAL'}
-                            </span>
-                        </td>
-                        <td class="py-4">
-                            <div class="flex items-center gap-3 w-32">
-                                <div class="flex-1 bg-white/5 h-1 rounded-full overflow-hidden">
-                                    <div class="score-fill h-full ${getScoreColor(tier)}" style="width: 0%" data-score="${score}"></div>
-                                </div>
-                                <span class="mono text-[10px] font-bold ${getScoreText(tier)}">${score}</span>
-                            </div>
-                        </td>
-                        <td class="py-4 text-right pr-4 relative">
-                            <button onclick="toggleActionMenu(event, '${l.id}')"
-                                class="p-2 text-gray-600 hover:text-white transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
-                            </button>
-                        </td>
-                    </tr>
-                `;
+                            </td>
+                            <td class="py-4 text-right pr-4 relative">
+                                <button onclick="toggleActionMenu(event, '${l.id}')"
+                                    class="p-2 text-gray-600 hover:text-white transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                } catch (e) {
+                    console.error('[Render] Failed to render item at index', idx, e);
+                    return '';
+                }
             }).join('');
 
             // Trigger score bar animation
@@ -839,6 +917,7 @@
         }
 
         function getAvatarColor(name) {
+            if (!name) return 'bg-gray-500/20 text-gray-400';
             const colors = ['bg-blue-500/20 text-blue-400', 'bg-accent-mint/20 text-accent-mint', 'bg-indigo-500/20 text-accent-indigo', 'bg-amber-500/20 text-amber-500', 'bg-rose-500/20 text-rose-500'];
             return colors[name.length % colors.length];
         }
@@ -932,6 +1011,8 @@
             const lead = leads.find(l => l.id === id);
             const panel = document.getElementById('resultPanel');
             const content = document.getElementById('panelContent');
+            const tier = (lead.tier || (lead.LeadScore === 'High Potential' ? 'High' : (lead.LeadScore === 'Low Potential' ? 'Low' : 'Mid'))).toLowerCase();
+            const score = lead.score || 88;
 
             content.innerHTML = `
                 <div class="space-y-8 fade-up">
@@ -941,7 +1022,7 @@
                             <p class="mono text-[10px] text-gray-500 uppercase tracking-widest">${lead.website}</p>
                         </div>
                         <div class="flex flex-col items-end">
-                            <span class="mono text-2xl font-bold text-accent-indigo">88</span>
+                            <span class="mono text-2xl font-bold ${getScoreText(tier)}">${score}</span>
                             <span class="text-[9px] font-bold text-gray-600 uppercase">Neural Rank</span>
                         </div>
                     </div>
@@ -949,11 +1030,11 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="p-4 micro-border bg-black/20 rounded-xl space-y-1">
                             <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Industry Segment</span>
-                            <p class="text-xs font-bold text-gray-300">${lead.Industry || 'Enterprise SaaS'}</p>
+                            <p class="text-xs font-bold text-gray-300">${lead.industry || lead.Industry || 'Enterprise SaaS'}</p>
                         </div>
                         <div class="p-4 micro-border bg-black/20 rounded-xl space-y-1">
-                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Scale Estimate</span>
-                            <p class="text-xs font-bold text-gray-300">${lead.CompanySize || '11-50 Encl.'}</p>
+                            <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Qual Tier</span>
+                            <p class="text-xs font-bold ${getScoreText(tier)} uppercase">${lead.tier || lead.LeadScore || 'NEURAL_EVAL'}</p>
                         </div>
                     </div>
 

@@ -112,13 +112,13 @@ app.get('/api/debug-dom', async (req, res) => {
     let browser;
     try {
         const puppeteer = require('puppeteer');
-        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
+        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
         const browserlessUrl = process.env.BROWSERLESS_URL;
         
         if (browserlessUrl) {
             browser = await puppeteer.connect({ browserWSEndpoint: browserlessUrl });
         } else {
-            browser = await puppeteer.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
+            browser = await puppeteer.launch({ executablePath: executablePath || undefined, headless: true, args: ['--no-sandbox'] });
         }
         
         const page = await browser.newPage();
@@ -139,7 +139,7 @@ app.use(express.static('public'));
 // Endpoint to trigger scraping (Discovery)
 app.post('/api/generate', async (req, res) => {
     try {
-        const { url, limit = 5 } = req.body;
+        const { url, limit = 10 } = req.body;
         if (!url) return res.status(400).json({ error: 'URL is required' });
 
         // Start scraping in background to avoid Render 30s timeout
@@ -187,26 +187,19 @@ app.post('/api/analyze/:id', async (req, res) => {
     }
 });
 
-// Endpoint to export all leads as CSV
-app.get('/api/export', async (req, res) => {
+// Endpoint to export all leads as a Document (Txt/Doc style)
+app.get('/api/export-doc', async (req, res) => {
     try {
         const leads = await readLeads();
-        // Step 10: Sort by High Potential
-        const sortedLeads = leads.sort((a, b) => {
-            if (a.LeadScore === 'High Potential' && b.LeadScore !== 'High Potential') return -1;
-            if (a.LeadScore !== 'High Potential' && b.LeadScore === 'High Potential') return 1;
-            return 0;
-        });
+        const sortedLeads = leads.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-        const filename = 'titanleap_leads_export.csv';
-        const filePath = path.join(process.cwd(), filename);
-        await exportToCsv(sortedLeads, filePath);
-
-        res.download(filePath, (err) => {
-            if (err) console.error('Export Download Error:', err);
-            // Optional: delete temp file after download
-            // fs.unlinkSync(filePath);
-        });
+        const { generateDocContent } = require('./utils/doc');
+        const content = await generateDocContent(sortedLeads);
+        
+        const filename = 'titanleap_leads_report.txt';
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(content);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

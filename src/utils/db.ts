@@ -27,14 +27,33 @@ export async function readLeads(): Promise<Lead[]> {
 export async function addLeads(newLeads: Lead[]): Promise<number> {
     if (newLeads.length === 0) return 0;
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
         .from('leads')
         .upsert(newLeads, { onConflict: 'website' })
         .select();
 
     if (error) {
-        console.error('[Supabase] Write Error:', error.message);
-        return 0;
+        // Resilience: If column mismatch, try writing only core fields
+        console.warn('[Supabase] Schema mismatch detected, retrying with core fields...');
+        const coreLeads = newLeads.map(l => ({
+            id: l.id,
+            companyName: l.companyName,
+            website: l.website,
+            status: l.status,
+            createdAt: l.createdAt,
+            description: l.description
+        }));
+        
+        const retry = await supabase
+            .from('leads')
+            .upsert(coreLeads, { onConflict: 'website' })
+            .select();
+            
+        if (retry.error) {
+            console.error('[Supabase] Write Error:', retry.error.message);
+            return 0;
+        }
+        data = retry.data;
     }
 
     const addedCount = data?.length || 0;

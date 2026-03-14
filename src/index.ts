@@ -1,7 +1,7 @@
 import { scrapeUniversal } from './scraper/universal';
 import { addLeads, getTodaysLeadCount } from './utils/db';
 
-const DAILY_LIMIT = 200;
+const DAILY_LIMIT = 500;
 
 export async function runScraper(targetUrl: string, limit = 5): Promise<number> {
     console.log(`\n--- [TITANLEAP DISCOVERY PROTOCOL START] ---`);

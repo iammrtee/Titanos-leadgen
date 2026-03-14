@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Lead } from '../types';
+import { calculateLeadScore } from '../utils/scoring';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import 'dotenv/config';
 import fs from 'fs';
@@ -16,8 +17,24 @@ async function resolveWithAI(page: any, context: string, targetName: string): Pr
     
     try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({
-            model: modelName,
+        // Try multiple model strings as subsets of the API are sensitive to exact names
+        const modelNames = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+        let model: any;
+        
+        for (const name of modelNames) {
+            try {
+                // The SDK handles models/ prefix, but some environments behave better with different strings
+                model = genAI.getGenerativeModel({ model: name });
+                break;
+            } catch (e) {
+                continue;
+            }
+        }
+
+        if (!model) return null;
+
+        const modelWithConfig = genAI.getGenerativeModel({
+            model: model.model,
             generationConfig: {
                 responseMimeType: 'application/json',
                 responseSchema: {
@@ -61,13 +78,89 @@ async function resolveWithAI(page: any, context: string, targetName: string): Pr
     }
 }
 
-export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
-    // Fallsback to specialized landing pages if blocked
-    if (url === 'https://microlaunch.net' || url === 'microlaunch.net') {
-        url = 'https://microlaunch.net/launches';
-        console.log(`[Universal Scraper] Redirecting to high-link density path: ${url}`);
+async function scrapeLinkedInProfile(page: any, profileUrl: string): Promise<Partial<Lead>> {
+    console.log(`[LinkedIn] Attempting enrichment for: ${profileUrl}`);
+    try {
+        await page.goto(profileUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        await new Promise(r => setTimeout(r, 2000));
+
+        const data = await page.evaluate(() => {
+            const getTxt = (sel: string) => document.querySelector(sel)?.textContent?.trim() || '';
+            
+            // Public profile selectors
+            const name = getTxt('h1');
+            const description = getTxt('.top-card-layout__headline');
+            const employees = getTxt('.face-pile__text'); // "X associates"
+            
+            // Company specific
+            const industry = getTxt('.top-card-layout__second-subline');
+            
+            return {
+                companyName: name,
+                description,
+                teamSize: employees,
+                industry
+            };
+        });
+
+        console.log(`[LinkedIn] Success: Found ${data.companyName}`);
+        return data;
+    } catch (err: any) {
+        console.warn(`[LinkedIn] Enrichment failed for ${profileUrl}: ${err.message}`);
+        return {};
     }
-    console.log(`[Universal Scraper] Initiating protocol for: ${url}`);
+}
+
+async function predictEmailWithAI(domain: string, companyName: string): Promise<string | null> {
+    if (!process.env.GEMINI_API_KEY) return null;
+    const modelName = 'gemini-1.5-flash';
+    try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        email: { type: SchemaType.STRING }
+                    },
+                    required: ['email']
+                }
+            }
+        });
+
+        const prompt = `
+        Predict the most likely general contact email for ${companyName} (${domain}).
+        Use standard SaaS conventions: hello@, contact@, support@, info@.
+        Return JSON: {"email": "..."}
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = JSON.parse(result.response.text());
+        return response.email || null;
+    } catch (err: any) {
+        console.error(`[AI Email Prediction Error]:`, err.message);
+        return null;
+    }
+}
+
+export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
+    // URL Normalization & High-Density Redirects
+    let targetUrl = url.toLowerCase().startsWith('http') ? url : `https://${url}`;
+    const root = new URL(targetUrl).hostname.replace('www.', '');
+    
+    if (root === 'microlaunch.net' && !targetUrl.includes('/launches')) {
+        targetUrl = 'https://microlaunch.net/launches';
+        console.log(`[Discovery] Optimized path: ${targetUrl}`);
+    } else if (root === '1000.tools' && !targetUrl.includes('/category')) {
+        targetUrl = 'https://1000.tools/category/featured'; 
+        console.log(`[Discovery] Optimized path: ${targetUrl}`);
+    } else if (root === 'producthunt.com' && targetUrl === 'https://producthunt.com') {
+        targetUrl = 'https://producthunt.com/all';
+    }
+
+    console.log(`[Discovery] Targeting: ${targetUrl} (Limit: ${limit})`);
     
     let browser;
     try {
@@ -75,16 +168,19 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
         console.log(`[Universal Scraper] Cache Dir: ${cacheDir}`);
         
         // Explicit binary resolution for Docker/Render
-        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
+        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
         const browserlessUrl = process.env.BROWSERLESS_URL;
         
         if (browserlessUrl) {
             console.log(`[Universal Scraper] Connecting to Browserless: ${browserlessUrl}`);
             browser = await puppeteer.connect({ browserWSEndpoint: browserlessUrl });
         } else {
-            console.log(`[Universal Scraper] Attempting local browser launch: ${executablePath}`);
+            console.log(`[Universal Scraper] Attempting local browser launch...`);
+            // On Windows, if PUPPETEER_EXECUTABLE_PATH is null, puppeteer.launch() 
+            // will automatically find the installed browser.
+            // On Render (Linux), it's usually provided via env var.
             browser = await puppeteer.launch({
-                executablePath: executablePath,
+                executablePath: executablePath || undefined,
                 headless: true,
                 args: [
                     '--no-sandbox', 
@@ -124,115 +220,146 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
     }
 
     // Heavy scroll with better timing
+    // Heavy scroll with dynamic load-more triggering
     await page.evaluate(async () => {
-        await new Promise((resolve) => {
-            let totalHeight = 0;
-            const distance = 500;
-            const timer = setInterval(() => {
-                const scrollHeight = document.body.scrollHeight;
-                window.scrollBy(0, distance);
-                totalHeight += distance;
-                if (totalHeight >= scrollHeight || totalHeight >= 8000) {
-                    clearInterval(timer);
-                    resolve(null);
-                }
-            }, 150);
-        });
+        let totalHeight = 0;
+        const distance = 600;
+        const maxScroll = 12000;
+        
+        while (totalHeight < maxScroll) {
+            window.scrollBy(0, distance);
+            totalHeight += distance;
+            await new Promise(r => setTimeout(r, 200));
+
+            // Trigger "Load More" buttons if they appear (common on directories)
+            const buttons = Array.from(document.querySelectorAll('button, a, span'))
+                .filter(el => {
+                    const t = el.textContent?.toLowerCase() || '';
+                    return (t.includes('load more') || t.includes('show more') || t.includes('view more')) &&
+                           (el as HTMLElement).offsetParent !== null;
+                });
+            
+            if (buttons.length > 0) {
+                (buttons[0] as HTMLElement).click();
+                await new Promise(r => setTimeout(r, 600));
+            }
+
+            // Early exit if we reached the actual bottom
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+                // If we hit bottom but no load more button clicked, we might really be at the end
+                break;
+            }
+        }
     });
 
     console.log('[Universal Scraper] Discovery Phase: Analyzing DOM for product structures...');
 
     const baseDomain = new URL(url).hostname.replace('www.', '');
-    const potentialLinks = await page.evaluate((baseDomain) => {
-        const results: { title: string, url: string, confidence: number }[] = [];
-        const seenLinks = new Set<string>();
+    const allPotentialLinks: { title: string, url: string, confidence: number }[] = [];
+    let currentPage = 1;
+    let maxPages = limit > 50 ? 5 : 2; 
 
-        const allAnchors = Array.from(document.querySelectorAll('a'));
-        // Broaden patterns for various directories
-        const dirPatterns = ['/p/', '/product/', '/company/', '/startup/', '/app/', '/tools/', '/software/', '/apps/', '/tool/', '/deals/', '/launches/', '/projects/'];
-        
-        for (const a of allAnchors) {
-            const href = a.href;
-            if (!href || !href.startsWith('http') || seenLinks.has(href)) continue;
-
-            const urlObj = new URL(href);
-            const isInternal = urlObj.hostname.includes(baseDomain);
-            const text = a.innerText.trim();
-            const lowerHref = href.toLowerCase();
-
-            if (['login', 'signup', 'pricing', 'about', 'join', 'contact', 'cookies', 'terms', 'privacy', 'blog', 'news', 'podcast'].some(k => text.toLowerCase().includes(k))) continue;
-            
-            let confidence = 0;
-            // Pattern 1: Known directory segments
-            if (isInternal && dirPatterns.some(p => urlObj.pathname.includes(p))) {
-                confidence += 85;
+    while (currentPage <= maxPages && allPotentialLinks.length < limit * 2.5) {
+        if (currentPage > 1) {
+            let nextUrl = url;
+            if (url.includes('microlaunch.net')) {
+                nextUrl = url.includes('?') ? `${url}&page=${currentPage}` : `${url}?page=${currentPage}`;
+            } else if (url.includes('producthunt.com')) {
+                // Product hunt uses infinitely scroll, we already scrolled, but if it had pagination:
+                break;
+            } else {
+                break; 
             }
-
-            // Pattern 2: Single-level slugs with metadata-like parent
-            const pathParts = urlObj.pathname.split('/').filter(Boolean);
-            const parentNode = a.closest('div, article, li, section, tr, td');
-            const pClass = parentNode?.className.toLowerCase() || '';
-            const pId = parentNode?.id.toLowerCase() || '';
-            const isCard = pClass.includes('card') || pClass.includes('item') || pClass.includes('product') || pClass.includes('post') || pId.includes('product') || pClass.includes('flex');
-            const hasHeading = a.querySelector('h1, h2, h3, h4, h5, h6, strong, b') || a.parentElement?.querySelector('h3, h4, h5, h6, strong, b');
-
-            if (isInternal && pathParts.length === 1 && (isCard || hasHeading)) {
-                confidence += 75;
-            }
-
-            // Pattern 3: Visual structure
-            if (isCard) {
-                confidence += 15;
-            }
-
-            // Direct external links (aggregators)
-            if (!isInternal) {
-                const isSocial = ['twitter.com', 'facebook.com', 'linkedin.com', 'youtube.com', 'instagram.com', 'github.com', 'discord.gg', 'x.com'].some(s => lowerHref.includes(s));
-                const actionText = ['visit', 'website', 'get', 'try', 'launch', 'open'].some(k => text.toLowerCase().includes(k));
-                if (!isSocial && actionText) confidence += 75;
-            }
-
-            if (baseDomain.includes('microlaunch') && lowerHref.includes('/p/')) {
-                confidence = Math.max(confidence, 90);
-            }
-
-            // Fallback for image-based links or cards with little text
-            const finalTitle = text || a.getAttribute('aria-label') || a.querySelector('img')?.getAttribute('alt') || 'Unknown Startup';
-
-            if (confidence >= 60 && (finalTitle.length > 1 || confidence > 80)) {
-                let title = finalTitle;
-                const header = parentNode?.querySelector('h1, h2, h3, h4, h5, h6, strong, b, [class*="title"], [class*="name"]');
-                if (header && header.textContent?.trim() && header.textContent.trim().length > 2) {
-                    title = header.textContent.trim();
-                }
-
-                seenLinks.add(href);
-                results.push({
-                    title: title.split('\n')[0].substring(0, 70),
-                    url: href,
-                    confidence
-                });
-            }
+            console.log(`[Universal Scraper] Navigating to page ${currentPage}: ${nextUrl}`);
+            try {
+                await page.goto(nextUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+                await new Promise(r => setTimeout(r, 4000));
+            } catch (err) { break; }
         }
-        return results.sort((a, b) => b.confidence - a.confidence);
-    }, baseDomain);
 
-    console.log(`[Universal Scraper] Discovery Results: Found ${potentialLinks.length} total candidates at ${url}`);
-    if (potentialLinks.length > 0) {
-        console.log(`[Universal Scraper] Top Candidate: ${potentialLinks[0].title} (${potentialLinks[0].url})`);
+        const pageLinks = await page.evaluate((baseDomain) => {
+            const results: { title: string, url: string, confidence: number }[] = [];
+            const seenOnPage = new Set<string>();
+            const dirPatterns = ['/p/', '/product/', '/company/', '/startup/', '/app/', '/tools/', '/software/', '/apps/', '/tool/', '/projects/', '/directory/', '/launch/'];
+            const blacklist = ['/stories', '/browse', '/trends', '/hall-of-fame', '/partners', '/community', '/deals', '/blog', '/news', '/podcast', '/pricing', '/premium', '/about', '/contact', '/login', '/signup', '/terms', '/privacy', '/hq', '/account', '/search', '/faq', '/help'];
+            
+            const anchors = Array.from(document.querySelectorAll('a'));
+            for (const a of anchors) {
+                const href = a.href;
+                const lowerHref = href.toLowerCase();
+                if (!href || !href.startsWith('http') || seenOnPage.has(href)) continue;
+                if (blacklist.some(p => lowerHref.includes(p))) continue;
+                
+                const isInternal = href.includes(baseDomain);
+                const isSocial = ['twitter.com', 'facebook.com', 'linkedin.com', 'youtube.com', 'instagram.com', 'github.com', 'discord.gg', 'x.com'].some(s => lowerHref.includes(s));
+                if (isSocial) continue;
+
+                let confidence = 0;
+                // 1. Path Pattern Matching
+                const isProductPath = ['/p/', '/product/', '/launch/', '/startup/', '/app/', '/tools/', '/tool/'].some(p => lowerHref.includes(p));
+                if (isProductPath) confidence += 50;
+
+                // 2. Depth Scoring
+                const pathParts = new URL(href).pathname.split('/').filter(Boolean);
+                if (pathParts.length >= 1 && pathParts.length <= 2) confidence += 20;
+
+                // 3. Parental Context (Card Detect)
+                const parent = a.closest('div, article, li, section, tr, [class*="item"], [class*="card"]');
+                const pClass = (parent?.className || '').toLowerCase();
+                const pId = (parent?.id || '').toLowerCase();
+                if (['card', 'item', 'product', 'post', 'startup', 'entry', 'flex', 'grid', 'list'].some(k => pClass.includes(k) || pId.includes(k))) {
+                    confidence += 40;
+                }
+                
+                // 4. Content Bonus
+                const hasImg = !!a.querySelector('img') || !!parent?.querySelector('img');
+                if (hasImg) confidence += 10;
+                const hasRating = (parent?.textContent || '').includes('★') || (parent?.textContent || '').match(/\d\.\d/);
+                if (hasRating) confidence += 10;
+
+                if (confidence >= 35) { // Lower threshold for higher yield
+                    seenOnPage.add(href);
+                    results.push({ 
+                        title: (a.textContent || a.getAttribute('aria-label') || '').trim().split('\n')[0].substring(0, 60) || 'Unknown Lead', 
+                        url: href, 
+                        confidence 
+                    });
+                }
+            }
+            return results;
+        }, baseDomain);
+
+        allPotentialLinks.push(...pageLinks);
+        console.log(`[Universal Scraper] Page ${currentPage} found ${pageLinks.length} candidates.`);
+        currentPage++;
     }
 
-    console.log(`[Universal Scraper] ${potentialLinks.length} candidates found. Starting extraction...`);
+    const uniquePotentialLinks = Array.from(new Map(allPotentialLinks.map(l => [l.url, l])).values())
+        .sort((a, b) => b.confidence - a.confidence);
 
+    console.log(`[Universal Scraper] Total Unique Candidates: ${uniquePotentialLinks.length}`);
+    
     const uniqueDomains = new Set<string>();
     const leads: Lead[] = [];
 
-    for (const link of potentialLinks) {
-        if (leads.length >= limit) break;
+    // Parallel Booster: Hardened for Scaling (Safe Batching)
+    const chunks: any[][] = [];
+    const processingLinks = uniquePotentialLinks.slice(0, limit);
+    for (let i = 0; i < processingLinks.length; i += 2) { // Smaller batches (2) for stability on limited RAM
+        chunks.push(processingLinks.slice(i, i + 2));
+    }
 
+    // Discovery Fallback & Sequential Extraction
+    const candidateLinks = uniquePotentialLinks.slice(0, limit);
+    console.log(`[Discovery] Extraction Phase: Processing ${candidateLinks.length} leads sequentially for maximum stability.`);
+
+    for (const link of candidateLinks) {
+        if (leads.length >= limit) break;
+        
         try {
-            console.log(`[Deep Extraction] Opening: ${link.title}`);
+            console.log(`[Deep Extraction] Opening: ${link.title} (${link.url})`);
             const subPage = await browser.newPage();
+            // Use a per-page timeout and navigation strategy
             try {
                 await subPage.goto(link.url, { waitUntil: 'domcontentloaded', timeout: 20000 });
                 await new Promise(r => setTimeout(r, 2000));
@@ -240,13 +367,18 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
                 const extraction = await subPage.evaluate(() => {
                     const anchors = Array.from(document.querySelectorAll('a'));
                     const hostname = window.location.hostname.replace('www.', '').toLowerCase();
+                    const bodyText = document.body.innerText;
                     
+                    const getEmail = (text: string) => {
+                        const match = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+                        return match ? match[0] : null;
+                    };
+
+                    const isSocial = (h: string) => ['twitter.com', 'facebook.com', 'linkedin.com', 'youtube.com', 'instagram.com', 'github.com', 'discord.gg', 'x.com', 'producthunt.com', 'microlaunch.net'].some(s => h.includes(s));
+
                     const candidates = anchors.filter(a => {
                         const h = a.href.toLowerCase();
-                        const t = (a.innerText || a.getAttribute('aria-label') || '').toLowerCase();
-                        const isExt = !h.includes(hostname) && h.startsWith('http');
-                        const isSocial = ['twitter.com', 'facebook.com', 'linkedin.com', 'youtube.com', 'instagram.com', 'github.com', 'discord.gg', 'x.com', 'producthunt.com', 'microlaunch.net', 'google.com', 'apple.com', 'cloudflare.com', 'captcha', '1000.tools'].some(s => h.includes(s));
-                        return isExt && !isSocial;
+                        return !h.includes(hostname) && h.startsWith('http') && !isSocial(h);
                     });
 
                     candidates.sort((a, b) => {
@@ -258,50 +390,98 @@ export async function scrapeUniversal(url: string, limit = 5): Promise<Lead[]> {
                         return bS - aS;
                     });
 
-                    const h1 = document.querySelector('h1')?.innerText?.trim();
-                    const linkedin = anchors.find(a => a.href.includes('linkedin.com/company'))?.href;
+                    const linkedin = anchors.find(a => a.href.includes('linkedin.com/company') || a.href.includes('linkedin.com/in/'))?.href;
                     const twitter = anchors.find(a => a.href.includes('twitter.com/') || a.href.includes('x.com/'))?.href;
-                    const email = document.body.innerText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0];
-
-                    return { url: candidates[0]?.href || null, linkedin, twitter, email, title: h1 || null };
+                    
+                    return { 
+                        url: candidates[0]?.href || null, 
+                        linkedin, 
+                        twitter, 
+                        email: getEmail(bodyText), 
+                        title: document.querySelector('h1')?.innerText?.trim() || null,
+                        desc: document.querySelector('meta[name="description"]')?.getAttribute('content') || null
+                    };
                 });
 
                 let finalWebsite = extraction.url;
                 let finalName = extraction.title || link.title;
+                let finalEmail = extraction.email;
+                let finalLinkedin = extraction.linkedin;
+                let finalTwitter = extraction.twitter;
+                let finalIndustry = 'SaaS / Startup';
 
-                if (!finalWebsite) {
-                    const pageData = await subPage.evaluate(() => {
-                        const body = document.body.innerText.slice(0, 2000);
-                        const links = Array.from(document.querySelectorAll('a')).map(a => ({t: a.innerText.trim(), h: a.href})).filter(l => l.h.startsWith('http')).slice(0, 30);
-                        return `Links: ${JSON.stringify(links)}\n\nText: ${body}`;
-                    });
-                    finalWebsite = await resolveWithAI(subPage, pageData, link.title);
+                // LinkedIn & AI Lane
+                if (finalLinkedin) {
+                    const lData = await scrapeLinkedInProfile(subPage, finalLinkedin);
+                    if (lData.companyName) finalName = lData.companyName;
+                    if (lData.description) extraction.desc = lData.description;
+                    if (lData.industry) finalIndustry = lData.industry;
                 }
 
                 if (finalWebsite) {
-                    const urlObj = new URL(finalWebsite);
-                    const domain = urlObj.hostname.replace('www.', '');
+                    const domain = new URL(finalWebsite).hostname.replace('www.', '');
                     if (!uniqueDomains.has(domain)) {
                         uniqueDomains.add(domain);
-                        leads.push({
+                        
+                        let emailStatus: Lead['emailStatus'] = finalEmail ? 'extracted' : undefined;
+                        if (!finalEmail) {
+                            const aiPredict = await predictEmailWithAI(domain, finalName);
+                            if (aiPredict) {
+                                finalEmail = aiPredict;
+                                emailStatus = 'predicted';
+                            }
+                        }
+
+                        const lead: Lead = {
                             id: Math.random().toString(36).substr(2, 9),
                             companyName: finalName,
                             website: finalWebsite,
-                            industry: 'SaaS / Startup',
-                            contactEmail: extraction.email || undefined,
-                            linkedin: extraction.linkedin || undefined,
-                            twitter: extraction.twitter || undefined,
-                            description: `Scraped via TitanLeap Discovery`,
+                            industry: finalIndustry,
+                            contactEmail: finalEmail || undefined,
+                            emailStatus,
+                            linkedin: finalLinkedin || undefined,
+                            twitter: finalTwitter || undefined,
+                            description: extraction.desc || `Scraped via TitanLeap Discovery`,
                             status: 'scraped',
                             createdAt: new Date().toISOString()
-                        });
+                        };
+
+                        const { score, tier } = calculateLeadScore(lead);
+                        leads.push({ ...lead, score, tier });
+                        console.log(`[Extraction] SUCCESS: ${finalName} | Email: ${finalEmail || 'None'}`);
                     }
                 }
             } finally {
-                await subPage.close();
+                if (subPage && !subPage.isClosed()) await subPage.close().catch(() => {});
             }
         } catch (err) {
-            console.error(`[Deep Extraction] Failed subtask:`, err);
+            console.warn(`[Extraction] Fallback for ${link.title}: Deep extraction failed.`);
+            // Lead Fallback: Use discovery data as the lead if extraction fails
+            if (!uniqueDomains.has(link.url) && leads.length < limit) {
+                let fallbackEmail;
+                let fallbackStatus;
+                
+                // Try AI Prediction on the fallback company name
+                const predicted = await predictEmailWithAI('unknown', link.title);
+                if (predicted) {
+                    fallbackEmail = predicted;
+                    fallbackStatus = 'predicted' as const;
+                }
+
+                const fallback: Lead = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    companyName: link.title,
+                    website: link.url,
+                    contactEmail: fallbackEmail,
+                    emailStatus: fallbackStatus,
+                    status: 'scraped',
+                    createdAt: new Date().toISOString(),
+                    description: `Discovered on ${new URL(targetUrl).hostname}`
+                };
+                const { score, tier } = calculateLeadScore(fallback);
+                leads.push({ ...fallback, score, tier });
+                uniqueDomains.add(link.url);
+            }
         }
     }
 
